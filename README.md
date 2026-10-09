@@ -91,6 +91,20 @@ Capstone Alpha11 reports `access = 0` and `avx_bcast = 0` for masked broadcast `
 
 Dart 3.13 or later and a native C toolchain are required. Use Xcode Command Line Tools on macOS, Visual Studio C++ Build Tools on Windows, and the Android NDK for Android builds. Normal Dart or Flutter build commands run the hooks.
 
+iOS builds require full Xcode with the iOS SDK. Linux builds require GCC or Clang.
+
+Flutter bundles the native library for the selected target platform:
+
+| Platform | Library in the application | Location |
+| --- | --- | --- |
+| Windows | `lib_capstone_windows_plugin.dll` | Beside the application `.exe` |
+| Linux | `lib_capstone_linux_plugin.so` | Application bundle's `lib/` directory |
+| Android | `lib_capstone_android_plugin.so` | APK's `lib/<ABI>/` directory |
+| macOS | `lib_capstone_macos_plugin.framework` | Application's `Contents/Frameworks/` directory |
+| iOS | `lib_capstone_ios_plugin.framework` | Application's `Frameworks/` directory |
+
+On Apple platforms, the compiler produces `liblib_capstone_macos_plugin.dylib` or `liblib_capstone_ios_plugin.dylib`. Flutter removes the compiler's leading `lib` when creating the framework, preserving `lib_` in the final framework name. Dart CLI bundles retain the `.dylib` filename. FFI asset identifiers remain unchanged, so application code does not need platform-specific library paths.
+
 Windows builds use `/MD`, with the dynamic Microsoft C runtime. `/MT` is not used. The x64 `/MD` build imports `VCRUNTIME140.dll`, `KERNEL32.dll` and these Universal C Runtime contracts:
 
 - `api-ms-win-crt-heap-l1-1-0.dll`
@@ -116,6 +130,7 @@ Capstone is pinned to upstream tag `6.0.0-Alpha11`, commit `b2bf6327b5c7dc438291
 | macOS arm64 | 100 tests passed with all 23 backends, AOT build and link passed |
 | Windows x64 | 100 tests passed with all 23 backends on Windows 11 ARM64 VM, x64 runtime imports confirmed |
 | Android arm64 | All 23 backends compiled with NDK r28c for API 21, runtime not tested |
+| iOS arm64 | All 23 backends compiled with iOS 27 SDK for iOS 15 or later, Flutter framework packaging and ad-hoc signature verified, runtime not tested |
 
 The earlier x86/AArch64 build passed 43 tests before all-backend integration.
 
@@ -127,7 +142,7 @@ Compile the Android arm64 library with an installed Android NDK:
 dart run tool/build_target.dart android arm64
 ```
 
-This produces `build/android-arm64/libcapstone.so` for Android API 21 or later. The command compiles the library and does not run it. CI runs native tests on macOS arm64 and Windows x64 and checks Android arm64 compilation on Ubuntu.
+This produces `build/android-arm64/lib_capstone_android_plugin.so` for Android API 21 or later. The command compiles the library and does not run it. CI runs native tests on macOS arm64 and Windows x64 and checks Android arm64 compilation on Ubuntu.
 
 ## Update Capstone
 

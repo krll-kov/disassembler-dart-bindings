@@ -38,8 +38,15 @@ CLibrary capstoneLibrary(Uri root, OS targetOS, {Object? decoders}) {
       for (final String file in (backend['sources'] as List).cast<String>())
         source.resolve(file).toFilePath(),
   ]..sort();
+  final String prefix = switch (targetOS) {
+    OS.windows => 'lib_',
+    // Flutter strips lib from Apple frameworks, so this extra prefix
+    // preserves lib_ in their final filenames
+    OS.macOS || OS.iOS => 'lib_',
+    _ => '_',
+  };
   return CLibrary(
-    name: 'capstone',
+    name: '${prefix}capstone_${targetOS.name}_plugin',
     assetName: 'src/third_party/capstone.g.dart',
     sources: sources,
     includes: [source.resolve('include/').toFilePath()],

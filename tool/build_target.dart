@@ -38,16 +38,18 @@ Future<void> main(List<String> args) async {
       );
     final BuildInput input = builder.build();
     final BuildOutputBuilder output = BuildOutputBuilder();
-    await capstoneLibrary(root, OS.android).build(input: input, output: output);
+    final library = capstoneLibrary(root, OS.android);
+    await library.build(input: input, output: output);
     await File.fromUri(directory.resolve('output.json')).writeAsString(
       '${const JsonEncoder.withIndent('  ').convert(output.json)}\n',
     );
-    final Uri library = input.outputDirectory.resolve('libcapstone.so');
-    if (!await File.fromUri(library).exists()) {
+    final String fileName = OS.android.dylibFileName(library.name);
+    final Uri binary = input.outputDirectory.resolve(fileName);
+    if (!await File.fromUri(binary).exists()) {
       throw StateError('Android arm64 library was not produced');
     }
-    final Uri target = directory.resolve('libcapstone.so');
-    await File.fromUri(library).copy(target.toFilePath());
+    final Uri target = directory.resolve(fileName);
+    await File.fromUri(binary).copy(target.toFilePath());
     stdout.writeln('Android arm64 library: ${target.toFilePath()}');
   } catch (error) {
     stderr.writeln(error);
