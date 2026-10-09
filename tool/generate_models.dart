@@ -429,13 +429,16 @@ Future<void> generateModels(
   );
   if (check) {
     if (!destination.existsSync() ||
-        destination.readAsStringSync() != generated)
+        destination.readAsStringSync().replaceAll('\r\n', '\n') !=
+            generated.replaceAll('\r\n', '\n'))
       throw StateError('Generated architecture models differ from FFI output');
     if (!constantDestination.existsSync() ||
-        constantDestination.readAsStringSync() != exports)
+        constantDestination.readAsStringSync().replaceAll('\r\n', '\n') !=
+            exports.replaceAll('\r\n', '\n'))
       throw StateError('Generated constants differ from FFI output');
     if (!nativeDestination.existsSync() ||
-        nativeDestination.readAsStringSync() != nativeExports)
+        nativeDestination.readAsStringSync().replaceAll('\r\n', '\n') !=
+            nativeExports.replaceAll('\r\n', '\n'))
       throw StateError('Generated native exports differ from FFI output');
   } else {
     destination.parent.createSync(recursive: true);

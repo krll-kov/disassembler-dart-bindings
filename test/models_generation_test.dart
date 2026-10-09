@@ -28,6 +28,29 @@ Map<String, FieldDeclaration> _fields(ClassDeclaration type, bool native) => {
         value.name.lexeme: field,
 };
 
+const _generationFiles = <String>[
+  'lib/src/third_party/capstone.g.dart',
+  'lib/src/generated/models.g.dart',
+  'lib/constants.dart',
+  'lib/native.dart',
+];
+
+Directory _generationFixture(Uri root, Set<String> crlfFiles) {
+  final Directory fixture = Directory.systemTemp.createTempSync(
+    'capstone_models_',
+  );
+  for (final String path in _generationFiles) {
+    final File source = File.fromUri(root.resolve(path));
+    final File destination = File.fromUri(fixture.uri.resolve(path));
+    destination.parent.createSync(recursive: true);
+    final String value = source.readAsStringSync().replaceAll('\r\n', '\n');
+    destination.writeAsStringSync(
+      crlfFiles.contains(path) ? value.replaceAll('\n', '\r\n') : value,
+    );
+  }
+  return fixture;
+}
+
 void main() {
   final Uri root = Directory.current.absolute.uri;
 
@@ -37,6 +60,52 @@ void main() {
       await generateModels(root, check: true);
     },
   );
+
+  for (final String path in _generationFiles.skip(1)) {
+    test('CRLF $path avoids false generation drift', () async {
+      final Directory fixture = _generationFixture(root, {path});
+      addTearDown(() => fixture.deleteSync(recursive: true));
+      await generateModels(fixture.uri, check: true);
+    });
+  }
+
+  test('CRLF checkout avoids false generation drift', () async {
+    final Directory fixture = _generationFixture(
+      root,
+      _generationFiles.toSet(),
+    );
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    await generateModels(fixture.uri, check: true);
+  });
+
+  test('Native field mismatches still fail after CRLF normalization', () async {
+    final Directory fixture = _generationFixture(
+      root,
+      _generationFiles.toSet(),
+    );
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    final File source = File.fromUri(
+      fixture.uri.resolve(_generationFiles.first),
+    );
+    final String value = source.readAsStringSync();
+    expect(value, contains('external int op_count;'));
+    source.writeAsStringSync(
+      value.replaceFirst(
+        'external int op_count;',
+        'external int changed_op_count;',
+      ),
+    );
+    await expectLater(
+      generateModels(fixture.uri, check: true),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Generated architecture models differ from FFI output',
+        ),
+      ),
+    );
+  });
 
   test('Detail dependency fields retain types and native copy sources', () {
     final Map<String, ClassDeclaration> native = _classes(
