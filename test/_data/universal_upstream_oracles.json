@@ -1,0 +1,7980 @@
+[
+  {
+    "source": "tests/details/aarch64.yaml",
+    "input": {
+      "bytes": [
+        9,
+        0,
+        56,
+        213,
+        191,
+        64,
+        0,
+        213,
+        12,
+        5,
+        19,
+        213,
+        32,
+        80,
+        2,
+        14,
+        32,
+        228,
+        61,
+        15,
+        0,
+        24,
+        160,
+        95,
+        162,
+        0,
+        174,
+        158,
+        159,
+        55,
+        3,
+        213,
+        191,
+        51,
+        3,
+        213,
+        223,
+        63,
+        3,
+        213,
+        33,
+        124,
+        2,
+        155,
+        33,
+        124,
+        0,
+        83,
+        0,
+        64,
+        33,
+        75,
+        225,
+        11,
+        64,
+        185,
+        32,
+        4,
+        129,
+        218,
+        32,
+        8,
+        2,
+        139,
+        16,
+        91,
+        232,
+        60,
+        253,
+        123,
+        186,
+        169,
+        253,
+        199,
+        67,
+        248
+      ],
+      "arch": "CS_ARCH_AARCH64",
+      "options": [
+        "CS_OPT_DETAIL"
+      ],
+      "address": 44
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "mrs x9, MIDR_EL1",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x9",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_SYSREG",
+                  "sub_type": "AARCH64_OP_REG_MRS",
+                  "sys_raw_val": 49152
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_write": [
+              "x9"
+            ]
+          }
+        },
+        {
+          "asm_text": "msr SPSel, #0",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_SYSALIAS",
+                  "sub_type": "AARCH64_OP_PSTATEIMM0_15",
+                  "sys_raw_val": 5
+                },
+                {
+                  "type": "AARCH64_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            }
+          }
+        },
+        {
+          "asm_text": "msr DBGDTRTX_EL0, x12",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_SYSREG",
+                  "sub_type": "AARCH64_OP_REG_MSR",
+                  "sys_raw_val": 38952
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x12",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "x12"
+            ]
+          }
+        },
+        {
+          "asm_text": "tbx v0.8b, { v1.16b, v2.16b, v3.16b }, v2.8b",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "d0",
+                  "access": "CS_AC_READ_WRITE",
+                  "vas": "AARCH64LAYOUT_VL_8B",
+                  "is_vreg": 1
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q1",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_16B",
+                  "is_vreg": 1
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q2",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_16B",
+                  "is_vreg": 1
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q3",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_16B",
+                  "is_vreg": 1
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "d2",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_8B",
+                  "is_vreg": 1
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "writeback": 1,
+            "regs_read": [
+              "d0",
+              "q1",
+              "q2",
+              "q3",
+              "d2"
+            ],
+            "regs_write": [
+              "d0"
+            ]
+          }
+        },
+        {
+          "asm_text": "scvtf v0.2s, v1.2s, #3",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "d0",
+                  "access": "CS_AC_WRITE",
+                  "vas": "AARCH64LAYOUT_VL_2S"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "d1",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_2S"
+                },
+                {
+                  "type": "AARCH64_OP_IMM",
+                  "imm": 3,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "d1"
+            ],
+            "regs_write": [
+              "d0"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmla s0, s0, v0.s[3]",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q0",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_S",
+                  "vector_index": 3,
+                  "vector_index_is_set": true
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "writeback": 1,
+            "regs_read": [
+              "fpcr",
+              "s0",
+              "q0"
+            ],
+            "regs_write": [
+              "s0"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmov x2, v5.d[1]",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q5",
+                  "access": "CS_AC_READ",
+                  "vas": "AARCH64LAYOUT_VL_D",
+                  "vector_index": 1,
+                  "vector_index_is_set": true
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "q5"
+            ],
+            "regs_write": [
+              "x2"
+            ]
+          }
+        },
+        {
+          "asm_text": "dsb nsh",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_SYSALIAS",
+                  "sub_type": "AARCH64_OP_DB",
+                  "sys_raw_val": 7
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            }
+          }
+        },
+        {
+          "asm_text": "dmb osh",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_SYSALIAS",
+                  "sub_type": "AARCH64_OP_DB",
+                  "sys_raw_val": 3
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            }
+          }
+        },
+        {
+          "asm_text": "isb"
+        },
+        {
+          "asm_text": "mul x1, x1, x2",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x2",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "x1",
+              "x2"
+            ],
+            "regs_write": [
+              "x1"
+            ]
+          }
+        },
+        {
+          "asm_text": "lsr w1, w1, #0",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w1",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "w1"
+            ],
+            "regs_write": [
+              "w1"
+            ]
+          }
+        },
+        {
+          "asm_text": "sub w0, w0, w1, uxtw",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w1",
+                  "access": "CS_AC_READ",
+                  "ext": "AARCH64_EXT_UXTW"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "w0",
+              "w1"
+            ],
+            "regs_write": [
+              "w0"
+            ]
+          }
+        },
+        {
+          "asm_text": "ldr w1, [sp, #8]",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "w1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_MEM",
+                  "mem_base": "sp",
+                  "mem_disp": 8,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "sp"
+            ],
+            "regs_write": [
+              "w1"
+            ]
+          }
+        },
+        {
+          "asm_text": "cneg x0, x1, ne",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x1",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "AArch64CC_NE"
+            },
+            "regs_read": [
+              "nzcv",
+              "x1"
+            ],
+            "regs_write": [
+              "x0"
+            ]
+          }
+        },
+        {
+          "asm_text": "add x0, x1, x2, lsl #2",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x2",
+                  "access": "CS_AC_READ",
+                  "shift_type": "AARCH64_SFT_LSL",
+                  "shift_value": 2
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "x1",
+              "x2"
+            ],
+            "regs_write": [
+              "x0"
+            ]
+          }
+        },
+        {
+          "asm_text": "ldr q16, [x24, w8, uxtw #4]",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "q16",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_MEM",
+                  "mem_base": "x24",
+                  "mem_index": "w8",
+                  "access": "CS_AC_READ",
+                  "shift_type": "AARCH64_SFT_LSL",
+                  "shift_value": 4,
+                  "ext": "AARCH64_EXT_UXTW"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "regs_read": [
+              "x24",
+              "w8"
+            ],
+            "regs_write": [
+              "q16"
+            ]
+          }
+        },
+        {
+          "asm_text": "stp x29, x30, [sp, #-0x60]!",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x29",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x30",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "AARCH64_OP_MEM",
+                  "mem_base": "sp",
+                  "mem_disp": "-0x60",
+                  "access": "CS_AC_WRITE"
+                }
+              ],
+              "cc": "AArch64CC_Invalid"
+            },
+            "writeback": 1,
+            "regs_read": [
+              "x29",
+              "x30",
+              "sp"
+            ],
+            "regs_write": [
+              "sp"
+            ]
+          }
+        },
+        {
+          "asm_text": "ldr x29, [sp], #0x3c",
+          "details": {
+            "aarch64": {
+              "operands": [
+                {
+                  "type": "AARCH64_OP_REG",
+                  "reg": "x29",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "AARCH64_OP_MEM",
+                  "mem_base": "sp",
+                  "mem_disp": 60,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "post_indexed": 1,
+              "cc": "AArch64CC_Invalid"
+            },
+            "writeback": 1,
+            "regs_read": [
+              "sp"
+            ],
+            "regs_write": [
+              "sp",
+              "x29"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/alpha.yaml",
+    "input": {
+      "bytes": [
+        2,
+        0,
+        187,
+        39,
+        80,
+        122,
+        189,
+        35,
+        208,
+        255,
+        222,
+        35,
+        0,
+        0,
+        94,
+        183
+      ],
+      "arch": "alpha",
+      "options": [
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "ldah $29,2($27)",
+          "details": {
+            "regs_read": [
+              "$27"
+            ],
+            "regs_write": [
+              "$29"
+            ],
+            "alpha": {
+              "operands": [
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$29"
+                },
+                {
+                  "type": "ALPHA_OP_IMM",
+                  "imm": 2
+                },
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$27"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $29,0x7a50($29)",
+          "details": {
+            "regs_read": [
+              "$29"
+            ],
+            "regs_write": [
+              "$29"
+            ],
+            "alpha": {
+              "operands": [
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$29"
+                },
+                {
+                  "type": "ALPHA_OP_IMM",
+                  "imm": 31312
+                },
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$29"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $30,0xffd0($30)",
+          "details": {
+            "regs_read": [
+              "$30"
+            ],
+            "regs_write": [
+              "$30"
+            ],
+            "alpha": {
+              "operands": [
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$30"
+                },
+                {
+                  "type": "ALPHA_OP_IMM",
+                  "imm": 65488
+                },
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "stq $26,0($30)",
+          "details": {
+            "regs_read": [
+              "$26",
+              "$30"
+            ],
+            "regs_write": [],
+            "alpha": {
+              "operands": [
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$26"
+                },
+                {
+                  "type": "ALPHA_OP_IMM",
+                  "imm": 0
+                },
+                {
+                  "type": "ALPHA_OP_REG",
+                  "reg": "$30"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/arc.yaml",
+    "input": {
+      "bytes": [
+        4,
+        17,
+        0,
+        0,
+        4,
+        17,
+        0,
+        2,
+        4,
+        17,
+        0,
+        4,
+        4,
+        17,
+        0,
+        1,
+        4,
+        17,
+        0,
+        3,
+        4,
+        17,
+        0,
+        5,
+        4,
+        17,
+        128,
+        0,
+        4,
+        17,
+        128,
+        2,
+        4,
+        17,
+        128,
+        4,
+        45,
+        10,
+        64,
+        0,
+        202,
+        34,
+        129,
+        1
+      ],
+      "arch": "arc",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_LITTLE_ENDIAN"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "ld %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.aw %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.ab %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldh %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldh.aw %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldh.ab %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldb %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldb.aw %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldb.ab %r0, [%r1,4]",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "breq %r2, %r1, 80",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 80,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "%r2",
+              "%r1"
+            ],
+            "groups": [
+              "jump",
+              "branch_relative"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.eq %r2, %r6",
+          "details": {
+            "arc": {
+              "operands": [
+                {
+                  "type": "ARC_OP_IMM",
+                  "imm": 1,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARC_OP_REG",
+                  "reg": "%r6",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "status32",
+              "%r6"
+            ],
+            "regs_write": [
+              "%r2"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/arm.yaml",
+    "input": {
+      "bytes": [
+        134,
+        72,
+        96,
+        244,
+        77,
+        15,
+        226,
+        244,
+        237,
+        255,
+        255,
+        235,
+        4,
+        224,
+        45,
+        229,
+        0,
+        0,
+        0,
+        0,
+        224,
+        131,
+        34,
+        229,
+        241,
+        2,
+        3,
+        14,
+        0,
+        0,
+        160,
+        227,
+        2,
+        48,
+        193,
+        231,
+        0,
+        0,
+        83,
+        227,
+        0,
+        2,
+        1,
+        241,
+        5,
+        64,
+        208,
+        232,
+        244,
+        128,
+        0,
+        0
+      ],
+      "arch": "arm",
+      "options": [
+        "CS_MODE_ARM",
+        "CS_OPT_DETAIL"
+      ],
+      "address": 2147487744
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "vld2.32 {d20, d21}, [r0], r6",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d20",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d21",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r0",
+                  "mem_index": "r6",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "post_indexed": 1,
+              "vector_size": 32
+            },
+            "writeback": 1,
+            "regs_read": [
+              "r0",
+              "r6"
+            ],
+            "regs_write": [
+              "r0",
+              "d20",
+              "d21"
+            ]
+          }
+        },
+        {
+          "asm_text": "vld4.16 {d16[], d17[], d18[], d19[]}, [r2]!",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d16",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d17",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d18",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "d19",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r2",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "post_indexed": -1,
+              "vector_size": 16
+            },
+            "writeback": 1,
+            "regs_read": [
+              "r2"
+            ],
+            "regs_write": [
+              "r2",
+              "d16",
+              "d17",
+              "d18",
+              "d19"
+            ]
+          }
+        },
+        {
+          "asm_text": "bl 0x80000fc4",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_IMM",
+                  "imm": 2147487684,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "r13"
+            ],
+            "regs_write": [
+              "r14"
+            ]
+          }
+        },
+        {
+          "asm_text": "str lr, [sp, #-4]!",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r14",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r13",
+                  "mem_disp": 4,
+                  "access": "CS_AC_WRITE",
+                  "subtracted": 1
+                }
+              ],
+              "post_indexed": -1
+            },
+            "writeback": 1,
+            "regs_read": [
+              "r14",
+              "r13"
+            ],
+            "regs_write": [
+              "r13"
+            ]
+          }
+        },
+        {
+          "asm_text": "andeq r0, r0, r0",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "ARMCC_EQ"
+            },
+            "regs_read": [
+              "cpsr",
+              "r0"
+            ],
+            "regs_write": [
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "str r8, [r2, #-0x3e0]!",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r8",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r2",
+                  "mem_disp": 992,
+                  "access": "CS_AC_WRITE",
+                  "subtracted": 1
+                }
+              ],
+              "post_indexed": -1
+            },
+            "writeback": 1,
+            "regs_read": [
+              "r8",
+              "r2"
+            ],
+            "regs_write": [
+              "r2"
+            ]
+          }
+        },
+        {
+          "asm_text": "mcreq p2, #0, r0, c3, c1, #7",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_PIMM",
+                  "imm": 2,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_CIMM",
+                  "imm": 3,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_CIMM",
+                  "imm": 1,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_IMM",
+                  "imm": 7,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "cc": "ARMCC_EQ"
+            },
+            "regs_read": [
+              "cpsr",
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov r0, #0",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_write": [
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "strb r3, [r1, r2]",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r1",
+                  "mem_index": "r2",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            },
+            "regs_read": [
+              "r3",
+              "r1",
+              "r2"
+            ]
+          }
+        },
+        {
+          "asm_text": "cmp r3, #0",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "update_flags": 1
+            },
+            "regs_read": [
+              "r3"
+            ],
+            "regs_write": [
+              "cpsr"
+            ]
+          }
+        },
+        {
+          "asm_text": "setend be",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_SETEND",
+                  "setend": "ARM_SETEND_BE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldm r0, {r0, r2, lr} ^",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r14",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            },
+            "regs_read": [
+              "r0"
+            ],
+            "regs_write": [
+              "r0",
+              "r2",
+              "r14"
+            ]
+          }
+        },
+        {
+          "asm_text": "strdeq r8, r9, [r0], -r4",
+          "details": {
+            "arm": {
+              "operands": [
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r8",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_REG",
+                  "reg": "r9",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "ARM_OP_MEM",
+                  "mem_base": "r0",
+                  "mem_index": "r4",
+                  "access": "CS_AC_WRITE",
+                  "subtracted": 1
+                }
+              ],
+              "cc": "ARMCC_EQ",
+              "post_indexed": 1
+            },
+            "writeback": 1,
+            "regs_read": [
+              "cpsr",
+              "r8",
+              "r9",
+              "r0",
+              "r4"
+            ],
+            "regs_write": [
+              "r0"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/bpf.yaml",
+    "input": {
+      "bytes": [
+        148,
+        9,
+        0,
+        0,
+        55,
+        19,
+        3,
+        0,
+        135,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        22,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "arch": "bpf",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_BPF_CLASSIC"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "mod 0x31337",
+          "details": {
+            "groups": [
+              "BPF_GRP_ALU"
+            ],
+            "bpf": {
+              "operands": [
+                {
+                  "type": "BPF_OP_IMM",
+                  "imm": 201527
+                }
+              ]
+            },
+            "regs_read": [
+              "a"
+            ],
+            "regs_write": [
+              "a"
+            ]
+          }
+        },
+        {
+          "asm_text": "txa",
+          "details": {
+            "regs_read": [
+              "x"
+            ],
+            "groups": [
+              "BPF_GRP_MISC"
+            ],
+            "regs_write": [
+              "a"
+            ]
+          }
+        },
+        {
+          "asm_text": "tax",
+          "details": {
+            "regs_read": [
+              "a"
+            ],
+            "groups": [
+              "BPF_GRP_MISC"
+            ],
+            "regs_write": [
+              "x"
+            ]
+          }
+        },
+        {
+          "asm_text": "ret a",
+          "details": {
+            "groups": [
+              "BPF_GRP_RETURN"
+            ],
+            "bpf": {
+              "operands": [
+                {
+                  "type": "BPF_OP_REG",
+                  "reg": "a"
+                }
+              ]
+            },
+            "regs_read": [
+              "a"
+            ]
+          }
+        },
+        {
+          "asm_text": "ld #len",
+          "details": {
+            "groups": [
+              "BPF_GRP_LOAD"
+            ],
+            "bpf": {
+              "operands": [
+                {
+                  "type": "BPF_OP_EXT",
+                  "ext": "BPF_EXT_LEN"
+                }
+              ]
+            },
+            "regs_write": [
+              "a"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/evm.yaml",
+    "input": {
+      "bytes": [
+        96,
+        97,
+        80
+      ],
+      "arch": "evm",
+      "options": [
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "push1 61",
+          "details": {
+            "evm": {
+              "push": 1,
+              "fee": 3
+            },
+            "groups": [
+              "EVM_GRP_STACK_WRITE"
+            ]
+          }
+        },
+        {
+          "asm_text": "pop",
+          "details": {
+            "evm": {
+              "pop": 1,
+              "fee": 2
+            },
+            "groups": [
+              "EVM_GRP_STACK_READ"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/hppa.yaml",
+    "input": {
+      "bytes": [
+        0,
+        32,
+        80,
+        162,
+        0,
+        1,
+        88,
+        32,
+        0,
+        0,
+        68,
+        161,
+        0,
+        65,
+        24,
+        64,
+        0,
+        32,
+        8,
+        162,
+        1,
+        96,
+        72,
+        161,
+        1,
+        97,
+        24,
+        192,
+        0,
+        0,
+        20,
+        161,
+        0,
+        15,
+        13,
+        97,
+        0,
+        15,
+        14,
+        97,
+        0,
+        1,
+        24,
+        96,
+        0,
+        0,
+        12,
+        0,
+        0,
+        0,
+        12,
+        160,
+        3,
+        255,
+        192,
+        31,
+        0,
+        0,
+        4,
+        0,
+        0,
+        16,
+        4,
+        0,
+        4,
+        34,
+        81,
+        131,
+        4,
+        34,
+        81,
+        195,
+        4,
+        34,
+        81,
+        131,
+        4,
+        47,
+        113,
+        131,
+        4,
+        47,
+        113,
+        195,
+        4,
+        47,
+        113,
+        131,
+        4,
+        65,
+        83,
+        67,
+        4,
+        65,
+        83,
+        99,
+        4,
+        65,
+        83,
+        3,
+        4,
+        65,
+        18,
+        0,
+        4,
+        65,
+        22,
+        0,
+        4,
+        65,
+        22,
+        32,
+        4,
+        65,
+        66,
+        0,
+        4,
+        65,
+        70,
+        0,
+        4,
+        65,
+        70,
+        32,
+        4,
+        65,
+        18,
+        64,
+        4,
+        65,
+        18,
+        96,
+        4,
+        65,
+        66,
+        64,
+        4,
+        65,
+        66,
+        96,
+        4,
+        65,
+        24,
+        0,
+        4,
+        65,
+        8,
+        0,
+        4,
+        65,
+        19,
+        128,
+        4,
+        65,
+        19,
+        160,
+        4,
+        65,
+        82,
+        128,
+        4,
+        65,
+        82,
+        160,
+        4,
+        94,
+        114,
+        128,
+        4,
+        65,
+        66,
+        128,
+        4,
+        65,
+        82,
+        192,
+        4,
+        65,
+        82,
+        224,
+        4,
+        65,
+        66,
+        192,
+        4,
+        65,
+        66,
+        224,
+        20,
+        0,
+        222,
+        173
+      ],
+      "arch": "hppa",
+      "options": [
+        "CS_MODE_BIG_ENDIAN",
+        "CS_MODE_HPPA_20",
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "ldsid (sr1,r1), rp",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mtsp r1, sr1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "sr1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mfsp sr1, r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "sr1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mtctl r1, cr2",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "cr2",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mfctl cr1, rp",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "cr1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mfctl,w sar, r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "sar",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mtsarcm r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mfia r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ssm 0xf, r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "rsm 0xf, r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mtsm r1",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "rfi"
+        },
+        {
+          "asm_text": "rfi,r"
+        },
+        {
+          "asm_text": "break 0x1f, 0x1ffe",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 31
+                },
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 8190
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sync"
+        },
+        {
+          "asm_text": "syncdma"
+        },
+        {
+          "asm_text": "probe,r (sr1,r1), rp, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "probe,w (sr1,r1), rp, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "probe,r (sr1,r1), rp, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "probei,r (sr1,r1), 0xf, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "probei,w (sr1,r1), 0xf, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "probei,r (sr1,r1), 0xf, r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lpa r1(sr1,rp), r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lpa,m r1(sr1,rp), r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lci r1(sr1,rp), r3",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdtlb r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdtlb,l r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdtlb,l,m r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pitlb r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pitlb,l r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pitlb,l,m r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdtlbe r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdtlbe,m r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pitlbe r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pitlbe,m r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "idtlbt r1, rp",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "iitlbt r1, rp",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_REG",
+                  "reg": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdc r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "pdc,m r1(rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr0",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fdc r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fdc,m r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fdc 0xf(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_DISP",
+                  "imm": 15
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fic r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fdce r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fdce,m r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fice r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "fice,m r1(sr1,rp)",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IDX_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "HPPA_OP_MEM",
+                  "mem_space": "sr1",
+                  "mem_base": "rp",
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "diag 0xdead",
+          "details": {
+            "hppa": {
+              "operands": [
+                {
+                  "type": "HPPA_OP_IMM",
+                  "imm": 57005
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/loongarch.yaml",
+    "input": {
+      "bytes": [
+        12,
+        0,
+        8,
+        20,
+        140,
+        253,
+        191,
+        2
+      ],
+      "arch": "loongarch",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_LOONGARCH32"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "lu12i.w $t0, 0x4000",
+          "details": {
+            "loongarch": {
+              "operands": [
+                {
+                  "type": "LOONGARCH_OP_REG",
+                  "reg": "t0"
+                },
+                {
+                  "type": "LOONGARCH_OP_IMM",
+                  "imm": 16384
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "addi.w $t0, $t0, -1",
+          "details": {
+            "loongarch": {
+              "operands": [
+                {
+                  "type": "LOONGARCH_OP_REG",
+                  "reg": "t0"
+                },
+                {
+                  "type": "LOONGARCH_OP_REG",
+                  "reg": "t0"
+                },
+                {
+                  "type": "LOONGARCH_OP_IMM",
+                  "imm": -1
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/m680x.yaml",
+    "input": {
+      "bytes": [
+        107,
+        16,
+        0,
+        113,
+        16,
+        0,
+        114,
+        16,
+        16,
+        57
+      ],
+      "arch": "m680x",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_M680X_6301"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "tim #16; 0, x",
+          "details": {
+            "m680x": {
+              "operands": [
+                {
+                  "type": "M680X_OP_IMMEDIATE",
+                  "imm": 16,
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "M680X_OP_INDEXED",
+                  "idx": {
+                    "base_reg": "x",
+                    "offset": 0,
+                    "offset_bits": 8
+                  },
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "cc",
+              "x"
+            ],
+            "regs_write": [
+              "cc"
+            ]
+          }
+        },
+        {
+          "asm_text": "aim #16, $00",
+          "details": {
+            "m680x": {
+              "operands": [
+                {
+                  "type": "M680X_OP_IMMEDIATE",
+                  "imm": 16,
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "M680X_OP_DIRECT",
+                  "direct_addr": 0,
+                  "direct_addr_set": true,
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            },
+            "regs_read": [
+              "cc"
+            ],
+            "regs_write": [
+              "cc"
+            ]
+          }
+        },
+        {
+          "asm_text": "oim #16, $10",
+          "details": {
+            "m680x": {
+              "operands": [
+                {
+                  "type": "M680X_OP_IMMEDIATE",
+                  "imm": 16,
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "M680X_OP_DIRECT",
+                  "direct_addr": 16,
+                  "direct_addr_set": true,
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                }
+              ]
+            },
+            "regs_read": [
+              "cc"
+            ],
+            "regs_write": [
+              "cc"
+            ]
+          }
+        },
+        {
+          "asm_text": "rts",
+          "details": {
+            "regs_read": [
+              "s"
+            ],
+            "regs_write": [
+              "s",
+              "pc"
+            ],
+            "groups": [
+              "M680X_GRP_RET"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/m68k.yaml",
+    "input": {
+      "bytes": [
+        246,
+        32,
+        144,
+        0
+      ],
+      "arch": "m68k",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_BIG_ENDIAN",
+        "CS_MODE_M68K_060"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "move16 (a0)+, (a1)+",
+          "details": {
+            "m68k": {
+              "operands": [
+                {
+                  "type": "M68K_OP_MEM",
+                  "mem": {
+                    "base_reg": "a0"
+                  },
+                  "address_mode": "M68K_AM_REGI_ADDR_POST_INC"
+                },
+                {
+                  "type": "M68K_OP_MEM",
+                  "mem": {
+                    "base_reg": "a1"
+                  },
+                  "address_mode": "M68K_AM_REGI_ADDR_POST_INC"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/mips.yaml",
+    "input": {
+      "bytes": [
+        12,
+        16,
+        0,
+        151,
+        0,
+        0,
+        0,
+        0,
+        36,
+        2,
+        0,
+        12,
+        143,
+        162,
+        0,
+        0,
+        52,
+        33,
+        52,
+        86
+      ],
+      "arch": "CS_ARCH_MIPS",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_MIPS32R5",
+        "CS_MODE_BIG_ENDIAN"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "jal 0x40025c",
+          "details": {
+            "mips": {
+              "operands": [
+                {
+                  "type": "MIPS_OP_IMM",
+                  "imm": 4194908
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "nop"
+        },
+        {
+          "asm_text": "addiu $v0, $zero, 0xc",
+          "details": {
+            "mips": {
+              "operands": [
+                {
+                  "type": "MIPS_OP_REG",
+                  "reg": "v0"
+                },
+                {
+                  "type": "MIPS_OP_REG",
+                  "reg": "zero"
+                },
+                {
+                  "type": "MIPS_OP_IMM",
+                  "imm": 12
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lw $v0, 0($sp)",
+          "details": {
+            "mips": {
+              "operands": [
+                {
+                  "type": "MIPS_OP_REG",
+                  "reg": "v0"
+                },
+                {
+                  "type": "MIPS_OP_MEM",
+                  "mem_base": "sp"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ori $at, $at, 0x3456",
+          "details": {
+            "mips": {
+              "operands": [
+                {
+                  "type": "MIPS_OP_REG",
+                  "reg": "at"
+                },
+                {
+                  "type": "MIPS_OP_REG",
+                  "reg": "at"
+                },
+                {
+                  "type": "MIPS_OP_IMM",
+                  "imm": 13398
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/mos65xx.yaml",
+    "input": {
+      "bytes": [
+        161,
+        18,
+        165,
+        18,
+        169,
+        18,
+        173,
+        52,
+        18,
+        177,
+        18,
+        181,
+        18,
+        185,
+        52,
+        18,
+        189,
+        52,
+        18,
+        13,
+        52,
+        18,
+        0,
+        129,
+        135,
+        108,
+        1,
+        0,
+        133,
+        255,
+        16,
+        0,
+        25,
+        66,
+        66,
+        0,
+        73,
+        66
+      ],
+      "arch": "mos65xx",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_MOS65XX_6502",
+        "CS_OPT_SYNTAX_MOTOROLA"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "lda ($12, x)",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ZP_X_IND",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 18
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $12",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ZP",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 18
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda #$12",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_IMM",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_IMM",
+                  "imm": 18
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $1234",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ABS",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 4660
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda ($12), y",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ZP_IND_Y",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 18
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $12, x",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ZP_X",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 18
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $1234, y",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ABS_Y",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 4660
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda $1234, x",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ABS_X",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 4660
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ora $1234",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_ABS",
+              "modifies_flags": 1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 4660
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "brk $81",
+          "details": {
+            "mos65xx": {
+              "am": "MOS65XX_AM_INT",
+              "modifies_flags": -1,
+              "operands": [
+                {
+                  "type": "MOS65XX_OP_MEM",
+                  "mem": 129
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/ppc.yaml",
+    "input": {
+      "bytes": [
+        67,
+        32,
+        12,
+        7,
+        65,
+        86,
+        255,
+        23,
+        128,
+        32,
+        0,
+        0,
+        128,
+        63,
+        0,
+        0,
+        16,
+        67,
+        35,
+        14,
+        208,
+        68,
+        0,
+        128,
+        76,
+        67,
+        34,
+        2,
+        45,
+        3,
+        0,
+        128,
+        124,
+        67,
+        32,
+        20,
+        124,
+        67,
+        32,
+        147,
+        79,
+        32,
+        0,
+        33,
+        76,
+        200,
+        0,
+        33,
+        64,
+        130,
+        0,
+        20
+      ],
+      "arch": "ppc",
+      "options": [
+        "CS_MODE_BIG_ENDIAN",
+        "CS_OPT_DETAIL"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "bcla 0x19, lt, 0xc04",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_IMM",
+                  "imm": 25,
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_IMM",
+                  "imm": 3076,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "bc": {
+                "bi": 0,
+                "bi_set": true,
+                "bo": 25,
+                "bo_set": true,
+                "pred_ctr": "PPC_PRED_NZ"
+              }
+            }
+          }
+        },
+        {
+          "asm_text": "bdztla 4*cr5+eq, 0xffffff14",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "22",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_IMM",
+                  "imm": 4294967060,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "bc": {
+                "bi": 22,
+                "bi_set": true,
+                "bo": 10,
+                "bo_set": true,
+                "crX": "cr5",
+                "crX_bit": "PPC_BI_Z",
+                "pred_ctr": "PPC_PRED_Z"
+              }
+            }
+          }
+        },
+        {
+          "asm_text": "lwz r1, 0(0)",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_MEM",
+                  "mem_base": "0",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lwz r1, 0(r31)",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_MEM",
+                  "mem_base": "r31",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "vpkpx v2, v3, v4",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "v2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "v3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "v4",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "stfs f2, 0x80(r4)",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "f2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_MEM",
+                  "mem_base": "r4",
+                  "mem_disp": 128,
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "crand eq, un, 4*cr1+lt",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "4",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "cmpwi cr2, r3, 0x80",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "cr2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_IMM",
+                  "imm": 128,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "addc r2, r3, r4",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r4",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mulhd. r2, r3, r4",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "r4",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "update_cr0": 1
+            }
+          }
+        },
+        {
+          "asm_text": "bdnzlrl+",
+          "details": {
+            "ppc": {
+              "bc": {
+                "bi": 0,
+                "bi_set": true,
+                "bo": 25,
+                "bo_set": true,
+                "bh": "PPC_BH_SUBROUTINE_RET",
+                "pred_ctr": "PPC_PRED_NZ",
+                "hint": "PPC_BR_TAKEN"
+              }
+            }
+          }
+        },
+        {
+          "asm_text": "bflrl- 4*cr2+lt",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "8",
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "bc": {
+                "bi": 8,
+                "bi_set": true,
+                "bo": 6,
+                "bo_set": true,
+                "bh": "PPC_BH_SUBROUTINE_RET",
+                "crX": "cr2",
+                "crX_bit": "PPC_BI_LT",
+                "hint": "PPC_BR_NOT_TAKEN"
+              }
+            }
+          }
+        },
+        {
+          "asm_text": "bf eq, 0x1044",
+          "details": {
+            "ppc": {
+              "operands": [
+                {
+                  "type": "PPC_OP_REG",
+                  "reg": "2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "PPC_OP_IMM",
+                  "imm": 4164,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "bc": {
+                "bi": 2,
+                "bi_set": true,
+                "bo": 4,
+                "bo_set": true,
+                "crX": "cr0",
+                "crX_bit": "PPC_BI_Z"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/riscv.yaml",
+    "input": {
+      "bytes": [
+        55,
+        52,
+        0,
+        0,
+        151,
+        130,
+        0,
+        0,
+        239,
+        0,
+        128,
+        0,
+        239,
+        240,
+        31,
+        255,
+        231,
+        0,
+        69,
+        0,
+        231,
+        0,
+        192,
+        255,
+        99,
+        5,
+        65,
+        0,
+        227,
+        157,
+        97,
+        254,
+        99,
+        202,
+        147,
+        0,
+        99,
+        83,
+        181,
+        0,
+        99,
+        101,
+        214,
+        0,
+        99,
+        118,
+        247,
+        0,
+        3,
+        136,
+        24,
+        0,
+        3,
+        153,
+        73,
+        0,
+        3,
+        170,
+        106,
+        0,
+        3,
+        203,
+        43,
+        1,
+        3,
+        220,
+        140,
+        1,
+        35,
+        134,
+        173,
+        3,
+        35,
+        154,
+        206,
+        3,
+        35,
+        143,
+        239,
+        1,
+        147,
+        0,
+        224,
+        0,
+        19,
+        161,
+        1,
+        1,
+        19,
+        178,
+        2,
+        125,
+        19,
+        195,
+        3,
+        221,
+        19,
+        228,
+        196,
+        18,
+        19,
+        245,
+        133,
+        12,
+        19,
+        150,
+        230,
+        1,
+        19,
+        215,
+        151,
+        1,
+        19,
+        216,
+        248,
+        64,
+        51,
+        137,
+        73,
+        1,
+        179,
+        10,
+        123,
+        65,
+        51,
+        172,
+        172,
+        1,
+        179,
+        61,
+        222,
+        1,
+        51,
+        210,
+        98,
+        64,
+        179,
+        67,
+        148,
+        0,
+        51,
+        229,
+        197,
+        0,
+        179,
+        118,
+        247,
+        0,
+        179,
+        84,
+        57,
+        1,
+        179,
+        80,
+        49,
+        0,
+        51,
+        159,
+        15,
+        0,
+        115,
+        21,
+        4,
+        176,
+        243,
+        86,
+        0,
+        16,
+        51,
+        5,
+        123,
+        3,
+        179,
+        69,
+        156,
+        3,
+        51,
+        102,
+        189,
+        3,
+        47,
+        164,
+        2,
+        16,
+        175,
+        35,
+        101,
+        24,
+        47,
+        39,
+        47,
+        1,
+        67,
+        240,
+        32,
+        24,
+        211,
+        114,
+        115,
+        0,
+        83,
+        244,
+        4,
+        88,
+        83,
+        133,
+        197,
+        40,
+        83,
+        46,
+        222,
+        161,
+        211,
+        132,
+        5,
+        240,
+        83,
+        6,
+        5,
+        224,
+        83,
+        117,
+        0,
+        192,
+        211,
+        240,
+        5,
+        208,
+        211,
+        21,
+        8,
+        224,
+        135,
+        170,
+        117,
+        0,
+        39,
+        39,
+        102,
+        1,
+        67,
+        240,
+        32,
+        26,
+        211,
+        114,
+        115,
+        2,
+        83,
+        244,
+        4,
+        90,
+        83,
+        133,
+        197,
+        42,
+        83,
+        46,
+        222,
+        163
+      ],
+      "arch": "CS_ARCH_RISCV",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_OPT_DETAIL_REAL",
+        "CS_MODE_RISCV32",
+        "CS_MODE_RISCV_A",
+        "CS_MODE_RISCV_D",
+        "CS_OPT_SYNTAX_REAL"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "lui s0, 3",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 3,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "auipc t0, 8",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 8,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "jal ra, 4112",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4112,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_CALL",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "jal ra, 4092",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4092,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_CALL",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "jalr ra, 4(a0)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_CALL"
+            ]
+          }
+        },
+        {
+          "asm_text": "jalr ra, -4(zero)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "zero",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": -4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_CALL"
+            ]
+          }
+        },
+        {
+          "asm_text": "beq sp, tp, 4130",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "sp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "tp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4130,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "bne gp, t1, 4118",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "gp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4118,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "blt t2, s1, 4148",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4148,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "bge a0, a1, 4138",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4138,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "bltu a2, a3, 4146",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4146,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "bgeu a4, a5, 4152",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a4",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a5",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 4152,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_GRP_JUMP",
+              "RISCV_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "lb a6, 1(a7)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a6",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "a7",
+                  "mem_disp": 1,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lh s2, 4(s3)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "s3",
+                  "mem_disp": 4,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lw s4, 6(s5)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s4",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "s5",
+                  "mem_disp": 6,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lbu s6, 0x12(s7)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s6",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "s7",
+                  "mem_disp": 18,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lhu s8, 0x18(s9)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s8",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "s9",
+                  "mem_disp": 24,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sb s10, 0x2c(s11)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s10",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "s11",
+                  "mem_disp": 44,
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sh t3, 0x34(t4)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "t4",
+                  "mem_disp": 52,
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sb t5, 0x1e(t6)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t5",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "t6",
+                  "mem_disp": 30,
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "addi ra, zero, 0xe",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "zero",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 14,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "slti sp, gp, 0x10",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "sp",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "gp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 16,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sltiu tp, t0, 0x7d0",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "tp",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 2000,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "xori t1, t2, -0x230",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": "-0x230",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ori s0, s1, 0x12c",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 300,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "andi a0, a1, 0xc8",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 200,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "slli a2, a3, 0x1e",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 30,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "srli a4, a5, 0x19",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a4",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a5",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 25,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "srai a6, a7, 0xf",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a6",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a7",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 15,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "add s2, s3, s4",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s4",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sub s5, s6, s7",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s7",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "slt s8, s9, s10",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s8",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s9",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s10",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sltu s11, t3, t4",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s11",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t4",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sra tp, t0, t1",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "tp",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "xor t2, s0, s1",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "or a0, a1, a2",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "and a3, a4, a5",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a3",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a4",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a5",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "srl s1, s2, s3",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s3",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "srl ra, sp, gp",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ra",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "sp",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "gp",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "sll t5, t6, zero",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "zero",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "csrrw a0, mcycle, s0",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_CSR",
+                  "csr": "mcycle",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "csrrwi a3, sstatus, 0",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a3",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_CSR",
+                  "csr": "sstatus",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_IMM",
+                  "imm": 0,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "mul a0, s6, s7",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s7",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "HasStdExtMOrZmmul"
+            ]
+          }
+        },
+        {
+          "asm_text": "div a1, s8, s9",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s8",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s9",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtM"
+            ]
+          }
+        },
+        {
+          "asm_text": "rem a2, s10, s11",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s10",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s11",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtM"
+            ]
+          }
+        },
+        {
+          "asm_text": "lr.w s0, (t0)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "t0",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtA"
+            ]
+          }
+        },
+        {
+          "asm_text": "sc.w t2, t1, (a0)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "a0",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtA"
+            ]
+          }
+        },
+        {
+          "asm_text": "amoadd.w a4, s2, (t5)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a4",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "t5",
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "s2",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtA"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmadd.s ft0, ft1, ft2, ft3, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft3",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fadd.s ft5, ft6, ft7, dyn",
+          "details": {
+            "riscv": {
+              "rounding_mode": "RISCV_RM_DYN",
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft7",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fsqrt.s fs0, fs1, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmin.s fa0, fa1, fa2",
+          "details": {
+            "riscv": {
+              "rounding_mode": "RISCV_RM_INVALID",
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa2",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "feq.s t3, ft8, ft9",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t3",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft8",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft9",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmv.w.x fs1, a1",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmv.x.w a2, fa0",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa0",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fcvt.w.s a0, ft0, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft0",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fcvt.s.w ft1, a1, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fclass.s a1, fa6",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa6",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "flw fs5, 7(a1)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "a1",
+                  "mem_disp": 7,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fsw fs6, 0xe(a2)",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_MEM",
+                  "mem_base": "a2",
+                  "mem_disp": 14,
+                  "access": "CS_AC_WRITE"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtF"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmadd.d ft0, ft1, ft2, ft3, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft2",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft3",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtD"
+            ]
+          }
+        },
+        {
+          "asm_text": "fadd.d ft5, ft6, ft7, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft6",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft7",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtD"
+            ]
+          }
+        },
+        {
+          "asm_text": "fsqrt.d fs0, fs1, dyn",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fs1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtD"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmin.d fa0, fa1, fa2",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa0",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa1",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "fa2",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtD"
+            ]
+          }
+        },
+        {
+          "asm_text": "feq.d t3, ft8, ft9",
+          "details": {
+            "riscv": {
+              "operands": [
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "t3",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft8",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "RISCV_OP_REG",
+                  "reg": "ft9",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "groups": [
+              "RISCV_FEATURE_HasStdExtD"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/sh.yaml",
+    "input": {
+      "bytes": [
+        12,
+        49,
+        16,
+        32,
+        34,
+        33,
+        54,
+        100,
+        70,
+        37,
+        18,
+        18,
+        28,
+        2,
+        8,
+        193,
+        5,
+        199,
+        12,
+        113,
+        31,
+        2,
+        34,
+        207,
+        6,
+        137,
+        35,
+        0,
+        43,
+        65,
+        11,
+        0,
+        14,
+        64,
+        50,
+        0,
+        10,
+        241,
+        9,
+        0
+      ],
+      "arch": "sh",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_SH4A",
+        "CS_MODE_SHFPU"
+      ],
+      "address": 2147483648
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "add r0,r1",
+          "details": {
+            "regs_read": [
+              "r0"
+            ],
+            "regs_write": [
+              "r1"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.b r1,@r0",
+          "details": {
+            "regs_read": [
+              "r0",
+              "r1"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.l r2,@r1",
+          "details": {
+            "regs_read": [
+              "r1",
+              "r2"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.l @r3+,r4",
+          "details": {
+            "regs_write": [
+              "r3",
+              "r4"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.l r4,@-r5",
+          "details": {
+            "regs_read": [
+              "r4"
+            ],
+            "regs_write": [
+              "r5"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.l r1,@(8,r2)",
+          "details": {
+            "regs_read": [
+              "r2",
+              "r1"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.b @(r0,r1),r2",
+          "details": {
+            "regs_read": [
+              "r0",
+              "r1"
+            ],
+            "regs_write": [
+              "r2"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov.w r0,@(16,gbr)",
+          "details": {
+            "regs_read": [
+              "gbr",
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "mova 0x80000028,r0",
+          "details": {
+            "regs_write": [
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "add #12,r1",
+          "details": {
+            "regs_write": [
+              "r1"
+            ]
+          }
+        },
+        {
+          "asm_text": "mac.l @r1+,@r2+",
+          "details": {
+            "regs_write": [
+              "r1",
+              "r2"
+            ]
+          }
+        },
+        {
+          "asm_text": "or.b #34,@(r0,gbr)",
+          "details": {
+            "regs_read": [
+              "gbr",
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "bt 0x80000028",
+          "details": {
+            "groups": [
+              "SH_GRP_JUMP",
+              "SH_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "braf r0",
+          "details": {
+            "regs_read": [
+              "r0"
+            ],
+            "groups": [
+              "SH_GRP_JUMP",
+              "SH_GRP_BRANCH_RELATIVE"
+            ]
+          }
+        },
+        {
+          "asm_text": "jmp @r1",
+          "details": {
+            "regs_read": [
+              "r1"
+            ],
+            "groups": [
+              "SH_GRP_JUMP"
+            ]
+          }
+        },
+        {
+          "asm_text": "rts"
+        },
+        {
+          "asm_text": "ldc r0,sr",
+          "details": {
+            "regs_read": [
+              "r0"
+            ],
+            "regs_write": [
+              "sr"
+            ]
+          }
+        },
+        {
+          "asm_text": "stc ssr,r0",
+          "details": {
+            "regs_read": [
+              "ssr"
+            ],
+            "regs_write": [
+              "r0"
+            ]
+          }
+        },
+        {
+          "asm_text": "fmov fr0,@r1",
+          "details": {
+            "regs_read": [
+              "r1",
+              "fr0"
+            ]
+          }
+        },
+        {
+          "asm_text": "nop"
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/sparc.yaml",
+    "input": {
+      "bytes": [
+        128,
+        160,
+        64,
+        2
+      ],
+      "arch": "sparc",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_BIG_ENDIAN"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "cmp %g1, %g2",
+          "details": {
+            "sparc": {
+              "operands": [
+                {
+                  "type": "SPARC_OP_REG",
+                  "reg": "g1"
+                },
+                {
+                  "type": "SPARC_OP_REG",
+                  "reg": "g2"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/systemz.yaml",
+    "input": {
+      "bytes": [
+        237,
+        0,
+        0,
+        0,
+        0,
+        26,
+        90,
+        15,
+        31,
+        255,
+        194,
+        9,
+        128,
+        0,
+        0,
+        0,
+        7,
+        247,
+        235,
+        42,
+        255,
+        255,
+        127,
+        87,
+        227,
+        1,
+        255,
+        255,
+        127,
+        87,
+        235,
+        0,
+        240,
+        0,
+        0,
+        36,
+        178,
+        79,
+        0,
+        120,
+        236,
+        24,
+        0,
+        0,
+        193,
+        127
+      ],
+      "arch": "CS_ARCH_SYSTEMZ",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_BIG_ENDIAN",
+        "CS_MODE_SYSTEMZ_ARCH14"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "adb %f0, 0",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "f0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_MEM",
+                  "mem_am": "SYSTEMZ_AM_BDX",
+                  "mem_disp": 0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "a %r0, 0xfff(%r15,%r1)",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_MEM",
+                  "mem_base": "r1",
+                  "mem_index": "r15",
+                  "mem_disp": 4095
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "afi %r0, -0x80000000",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_IMM",
+                  "imm_width": 32,
+                  "imm": "-0x80000000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "br %r7",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r7"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "xiy 0x7ffff(%r15), 0x2a",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_MEM",
+                  "mem_base": "r15",
+                  "mem_disp": 524287
+                },
+                {
+                  "type": "SYSTEMZ_OP_IMM",
+                  "imm_width": 8,
+                  "imm": 42
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "xy %r0, 0x7ffff(%r1,%r15)",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_MEM",
+                  "mem_base": "r15",
+                  "mem_index": "r1",
+                  "mem_disp": 524287
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "stmg %r0, %r0, 0(%r15)",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "SYSTEMZ_OP_MEM",
+                  "mem_base": "r15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ear %r7, %a8",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r7"
+                },
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "a8"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "clije %r1, 0xc1, 0x1028",
+          "details": {
+            "systemz": {
+              "operands": [
+                {
+                  "type": "SYSTEMZ_OP_REG",
+                  "reg": "r1"
+                },
+                {
+                  "type": "SYSTEMZ_OP_IMM",
+                  "imm_width": 8,
+                  "imm": 193
+                },
+                {
+                  "type": "SYSTEMZ_OP_IMM",
+                  "imm_width": 0,
+                  "imm": 4136
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/tms320c64x.yaml",
+    "input": {
+      "bytes": [
+        1,
+        172,
+        136,
+        64,
+        129,
+        172,
+        136,
+        67,
+        0,
+        0,
+        0,
+        0,
+        2,
+        144,
+        50,
+        150,
+        2,
+        128,
+        70,
+        158,
+        5,
+        60,
+        131,
+        230,
+        11,
+        12,
+        139,
+        36
+      ],
+      "arch": "tms320c64x",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_BIG_ENDIAN"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "add.D1 a11, a4, a3",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "a11"
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "a4"
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "a3"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 1,
+              "funit_side_set": true,
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "[ a1] add.D2 b11, b4, b3 ||",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "b11"
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "b4"
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "b3"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 2,
+              "funit_side_set": true,
+              "cond_reg": "a1",
+              "cond_zero": -1,
+              "parallel": 1,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "NOP",
+          "details": {
+            "tms320c64x": {
+              "funit_unit": "TMS320C64X_FUNIT_NO",
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "ldbu.D1T2 *++a4[1], b5",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_MEM",
+                  "mem_base": "a4",
+                  "mem_disptype": "TMS320C64X_MEM_DISP_CONSTANT",
+                  "mem_disp_const": 1,
+                  "mem_unit": 2,
+                  "mem_direction": "TMS320C64X_MEM_DIR_FW",
+                  "mem_modify": "TMS320C64X_MEM_MOD_PRE",
+                  "mem_scaled": 1
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "b5"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 2,
+              "funit_side_set": true,
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "ldbu.D2T2 *+b15[0x46], b5",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_MEM",
+                  "mem_base": "b15",
+                  "mem_disptype": "TMS320C64X_MEM_DISP_CONSTANT",
+                  "mem_disp_const": 70,
+                  "mem_unit": 2,
+                  "mem_direction": "TMS320C64X_MEM_DIR_FW",
+                  "mem_modify": "TMS320C64X_MEM_MOD_NO",
+                  "mem_scaled": -1
+                },
+                {
+                  "type": "TMS320C64X_OP_REG",
+                  "reg": "b5"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 2,
+              "funit_side_set": true,
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "lddw.D1T2 *+a15[4], b11:b10",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_MEM",
+                  "mem_base": "a15",
+                  "mem_disptype": "TMS320C64X_MEM_DISP_CONSTANT",
+                  "mem_disp_const": 4,
+                  "mem_unit": 2,
+                  "mem_direction": "TMS320C64X_MEM_DIR_FW",
+                  "mem_modify": "TMS320C64X_MEM_MOD_NO",
+                  "mem_scaled": 1
+                },
+                {
+                  "type": "TMS320C64X_OP_REGPAIR",
+                  "reg_pair_0": "b11",
+                  "reg_pair_1": "b10"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 2,
+              "funit_side_set": true,
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        },
+        {
+          "asm_text": "ldndw.D1T1 *+a3(a4), a23:a22",
+          "details": {
+            "tms320c64x": {
+              "operands": [
+                {
+                  "type": "TMS320C64X_OP_MEM",
+                  "mem_base": "a3",
+                  "mem_disptype": "TMS320C64X_MEM_DISP_REGISTER",
+                  "mem_disp_reg": "a4",
+                  "mem_unit": 1,
+                  "mem_direction": "TMS320C64X_MEM_DIR_FW",
+                  "mem_modify": "TMS320C64X_MEM_MOD_NO",
+                  "mem_scaled": -1
+                },
+                {
+                  "type": "TMS320C64X_OP_REGPAIR",
+                  "reg_pair_0": "a23",
+                  "reg_pair_1": "a22"
+                }
+              ],
+              "funit_unit": "TMS320C64X_FUNIT_D",
+              "funit_side": 1,
+              "funit_side_set": true,
+              "parallel": 0,
+              "parallel_set": true
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/tricore.yaml",
+    "input": {
+      "bytes": [
+        9,
+        207,
+        188,
+        245,
+        9,
+        244,
+        1,
+        0,
+        137,
+        251,
+        143,
+        116,
+        137,
+        254,
+        72,
+        1,
+        41,
+        0,
+        25,
+        37,
+        41,
+        3,
+        9,
+        244,
+        133,
+        249,
+        104,
+        15,
+        22,
+        1
+      ],
+      "arch": "tricore",
+      "options": [
+        "CS_MODE_TRICORE_162",
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "ld.a a15, [+a12]#-4",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "a15"
+                },
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "a12",
+                  "mem_disp": -4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.b d4, [a15+]#1",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "d4"
+                },
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "a15",
+                  "mem_disp": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "st.h [+a15]#0x1cf, d11",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "a15",
+                  "mem_disp": 463
+                },
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "d11"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "st.d [a15+]#8, e14",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "a15",
+                  "mem_disp": 8
+                },
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "e14"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.w d0, [p0+c]#0x99",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "d0"
+                },
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "p0",
+                  "mem_disp": 153
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.b d3, [p0+c]#-0x37",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "d3"
+                },
+                {
+                  "type": "TRICORE_OP_MEM",
+                  "mem_base": "p0",
+                  "mem_disp": "-0x37"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ld.da p8, #0xf0003428",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "p8"
+                },
+                {
+                  "type": "TRICORE_OP_IMM",
+                  "imm": 4026545192
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "and d15, #1",
+          "details": {
+            "tricore": {
+              "operands": [
+                {
+                  "type": "TRICORE_OP_REG",
+                  "reg": "d15"
+                },
+                {
+                  "type": "TRICORE_OP_IMM",
+                  "imm": 1
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/wasm.yaml",
+    "input": {
+      "bytes": [
+        32,
+        0,
+        32,
+        1,
+        65,
+        32,
+        16,
+        201,
+        1,
+        69,
+        11
+      ],
+      "arch": "wasm",
+      "options": [
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "get_local 0x0",
+          "details": {
+            "groups": [
+              "WASM_GRP_VARIABLE"
+            ],
+            "wasm": {
+              "operands": [
+                {
+                  "type": "WASM_OP_VARUINT32",
+                  "varuint32": 0,
+                  "size": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "get_local 0x1",
+          "details": {
+            "groups": [
+              "WASM_GRP_VARIABLE"
+            ],
+            "wasm": {
+              "operands": [
+                {
+                  "type": "WASM_OP_VARUINT32",
+                  "varuint32": 1,
+                  "size": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "i32.const 0x20",
+          "details": {
+            "groups": [
+              "WASM_GRP_NUMBERIC"
+            ],
+            "wasm": {
+              "operands": [
+                {
+                  "type": "WASM_OP_VARUINT32",
+                  "varuint32": 32,
+                  "size": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "call 0xc9",
+          "details": {
+            "groups": [
+              "WASM_GRP_CONTROL"
+            ],
+            "wasm": {
+              "operands": [
+                {
+                  "type": "WASM_OP_VARUINT32",
+                  "varuint32": 201,
+                  "size": 2
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "i32.eqz",
+          "details": {
+            "groups": [
+              "WASM_GRP_NUMBERIC"
+            ]
+          }
+        },
+        {
+          "asm_text": "end",
+          "details": {
+            "groups": [
+              "WASM_GRP_CONTROL"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/x86.yaml",
+    "input": {
+      "bytes": [
+        141,
+        76,
+        50,
+        8,
+        1,
+        216,
+        129,
+        198,
+        52,
+        18,
+        0,
+        0,
+        5,
+        35,
+        1,
+        0,
+        0,
+        54,
+        139,
+        132,
+        145,
+        35,
+        1,
+        0,
+        0,
+        65,
+        141,
+        132,
+        57,
+        137,
+        103,
+        0,
+        0,
+        141,
+        135,
+        137,
+        103,
+        0,
+        0,
+        180,
+        198,
+        102,
+        233,
+        184,
+        0,
+        0,
+        0,
+        103,
+        255,
+        160,
+        35,
+        1,
+        0,
+        0,
+        102,
+        232,
+        203,
+        0,
+        0,
+        0,
+        116,
+        252
+      ],
+      "arch": "x86",
+      "options": [
+        "CS_OPT_DETAIL",
+        "CS_MODE_16"
+      ],
+      "address": 4096
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "lea cx, [si + 0x32]",
+          "size": 3,
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                141,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 76,
+              "enc_modrm_offset": 1,
+              "disp": 50,
+              "enc_disp_offset": 2,
+              "enc_disp_size": 1,
+              "operands": [
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "cx",
+                  "size": 2,
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "si",
+                  "mem_disp": 50,
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "si"
+            ],
+            "regs_write": [
+              "cx"
+            ]
+          }
+        },
+        {
+          "asm_text": "or byte ptr [bx + di], al",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                8,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 1,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "di",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_RESET_OF",
+                "X86_EFLAGS_RESET_CF",
+                "X86_EFLAGS_UNDEFINED_AF"
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "di",
+              "al"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "fadd dword ptr [bx + di + 0x34c6]",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                216,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 129,
+              "enc_modrm_offset": 1,
+              "disp": 13510,
+              "enc_disp_offset": 2,
+              "enc_disp_size": 2,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "di",
+                  "mem_disp": 13510,
+                  "size": 4,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "fpu_flags": [
+                "X86_FPU_FLAGS_MODIFY_C1",
+                "X86_FPU_FLAGS_UNDEFINED_C0",
+                "X86_FPU_FLAGS_UNDEFINED_C2",
+                "X86_FPU_FLAGS_UNDEFINED_C3"
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "di"
+            ],
+            "regs_write": [
+              "fpsw"
+            ]
+          }
+        },
+        {
+          "asm_text": "adc al, byte ptr [bx + si]",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                18,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "si",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF",
+                "X86_EFLAGS_TEST_CF"
+              ]
+            },
+            "regs_read": [
+              "flags",
+              "al",
+              "bx",
+              "si"
+            ],
+            "regs_write": [
+              "flags",
+              "al"
+            ]
+          }
+        },
+        {
+          "asm_text": "add byte ptr [di], al",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 5,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "di",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "di",
+              "al"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "and ax, word ptr [bx + di]",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                35,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 1,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "ax",
+                  "size": 2,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "di",
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_RESET_OF",
+                "X86_EFLAGS_RESET_CF",
+                "X86_EFLAGS_UNDEFINED_AF"
+              ]
+            },
+            "regs_read": [
+              "ax",
+              "bx",
+              "di"
+            ],
+            "regs_write": [
+              "flags",
+              "ax"
+            ]
+          }
+        },
+        {
+          "asm_text": "add byte ptr [bx + si], al",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "si",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "si",
+              "al"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov ax, word ptr ss:[si + 0x2391]",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_SS",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                139,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 132,
+              "enc_modrm_offset": 2,
+              "disp": 9105,
+              "enc_disp_offset": 3,
+              "enc_disp_size": 2,
+              "operands": [
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "ax",
+                  "size": 2,
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_segment": "ss",
+                  "mem_base": "si",
+                  "mem_disp": 9105,
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "ss",
+              "si"
+            ],
+            "regs_write": [
+              "ax"
+            ]
+          }
+        },
+        {
+          "asm_text": "add word ptr [bx + si], ax",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                1,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "si",
+                  "size": 2,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "ax",
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "si",
+              "ax"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "add byte ptr [bx + di - 0x73], al",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 65,
+              "enc_modrm_offset": 1,
+              "disp": "-0x73",
+              "enc_disp_offset": 2,
+              "enc_disp_size": 1,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "di",
+                  "mem_disp": "-0x73",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "di",
+              "al"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "test byte ptr [bx + di], bh",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                132,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 57,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "mem_index": "di",
+                  "size": 1
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "bh",
+                  "size": 1
+                }
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "di"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov word ptr [bx], sp",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                137,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 103,
+              "enc_modrm_offset": 1,
+              "disp": 0,
+              "enc_disp_offset": 2,
+              "enc_disp_size": 1,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "bx",
+                  "size": 2,
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "sp",
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "bx",
+              "sp"
+            ]
+          }
+        },
+        {
+          "asm_text": "add byte ptr [di - 0x7679], cl",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 141,
+              "enc_modrm_offset": 1,
+              "disp": "-0x7679",
+              "enc_disp_offset": 2,
+              "enc_disp_size": 2,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "di",
+                  "mem_disp": "-0x7679",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "cl",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "di",
+              "cl"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "add byte ptr [eax], al",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_ADDRSIZE"
+              ],
+              "opcode": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 4,
+              "modrm": 0,
+              "enc_modrm_offset": 2,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "eax",
+                  "size": 1,
+                  "access": "CS_AC_READ_WRITE"
+                },
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "al",
+                  "size": 1,
+                  "access": "CS_AC_READ"
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_MODIFY_AF",
+                "X86_EFLAGS_MODIFY_CF",
+                "X86_EFLAGS_MODIFY_SF",
+                "X86_EFLAGS_MODIFY_ZF",
+                "X86_EFLAGS_MODIFY_PF",
+                "X86_EFLAGS_MODIFY_OF"
+              ]
+            },
+            "regs_read": [
+              "eax",
+              "al"
+            ],
+            "regs_write": [
+              "flags"
+            ]
+          }
+        },
+        {
+          "asm_text": "mov ah, 0xc6",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                180,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_REG",
+                  "reg": "ah",
+                  "size": 1,
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "X86_OP_IMM",
+                  "imm": 198,
+                  "size": 1
+                }
+              ]
+            },
+            "regs_write": [
+              "ah"
+            ]
+          }
+        },
+        {
+          "asm_text": "jmp 0x10e7",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_OPSIZE",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                233,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_IMM",
+                  "imm": 4327,
+                  "size": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "jmp word ptr [eax + 0x123]",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_ADDRSIZE"
+              ],
+              "opcode": [
+                255,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 4,
+              "modrm": 160,
+              "enc_modrm_offset": 2,
+              "disp": 291,
+              "enc_disp_offset": 3,
+              "enc_disp_size": 4,
+              "operands": [
+                {
+                  "type": "X86_OP_MEM",
+                  "mem_base": "eax",
+                  "mem_disp": 291,
+                  "size": 2,
+                  "access": "CS_AC_READ"
+                }
+              ]
+            },
+            "regs_read": [
+              "eax"
+            ]
+          }
+        },
+        {
+          "asm_text": "call 0x1107",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_OPSIZE",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                232,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_IMM",
+                  "imm": 4359,
+                  "size": 4
+                }
+              ]
+            },
+            "regs_read": [
+              "esp",
+              "eip"
+            ],
+            "regs_write": [
+              "esp",
+              "eip"
+            ]
+          }
+        },
+        {
+          "asm_text": "je 0x103a",
+          "details": {
+            "x86": {
+              "prefix": [
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0",
+                "X86_PREFIX_0"
+              ],
+              "opcode": [
+                116,
+                0,
+                0,
+                0
+              ],
+              "rex": 0,
+              "addr_size": 2,
+              "modrm": 0,
+              "disp": 0,
+              "operands": [
+                {
+                  "type": "X86_OP_IMM",
+                  "imm": 4154,
+                  "size": 2
+                }
+              ],
+              "eflags": [
+                "X86_EFLAGS_TEST_ZF"
+              ]
+            },
+            "regs_read": [
+              "flags",
+              "ip"
+            ],
+            "regs_write": [
+              "ip"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/xcore.yaml",
+    "input": {
+      "bytes": [
+        254,
+        15,
+        254,
+        23,
+        19,
+        23,
+        198,
+        254,
+        236,
+        23,
+        151,
+        248,
+        236,
+        79,
+        31,
+        253,
+        236,
+        55,
+        7,
+        242,
+        69,
+        91,
+        249,
+        250,
+        2,
+        6,
+        27,
+        16,
+        9,
+        253,
+        236,
+        167
+      ],
+      "arch": "xcore",
+      "options": [
+        "CS_OPT_DETAIL"
+      ],
+      "address": 0
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "get r11, ed",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r11"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "ed"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldw et, sp[4]",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "et"
+                },
+                {
+                  "type": "XCORE_OP_MEM",
+                  "mem_base": "sp",
+                  "mem_disp": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "setd res[r3], r4",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r4"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "init t[r2]:lr, r1",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_MEM",
+                  "mem_base": "r2",
+                  "mem_index": "lr"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "divu r9, r1, r3",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r9"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r1"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lda16 r9, r3[-r11]",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r9"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldw dp, dp[0x81c5]",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "dp"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "lmul r11, r0, r2, r5, r8, r10",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r11"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r0"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r2"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r5"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r8"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "add r1, r2, r3",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r1"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r2"
+                },
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "ldaw r8, r2[-9]",
+          "details": {
+            "xcore": {
+              "operands": [
+                {
+                  "type": "XCORE_OP_REG",
+                  "reg": "r8"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "source": "tests/details/xtensa.yaml",
+    "input": {
+      "bytes": [
+        96,
+        81,
+        96,
+        26,
+        35
+      ],
+      "arch": "CS_ARCH_XTENSA",
+      "options": [
+        "CS_OPT_DETAIL"
+      ]
+    },
+    "expected": {
+      "insns": [
+        {
+          "asm_text": "abs a5, a6",
+          "details": {
+            "xtensa": {
+              "format": "XTENSA_INSN_FORM_RRR",
+              "operands": [
+                {
+                  "type": "XTENSA_OP_REG",
+                  "reg": "a5",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "XTENSA_OP_REG",
+                  "reg": "a6",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "asm_text": "add.n a2, a3, a1",
+          "details": {
+            "xtensa": {
+              "format": "XTENSA_INSN_FORM_RRRN",
+              "operands": [
+                {
+                  "type": "XTENSA_OP_REG",
+                  "reg": "a2",
+                  "access": "CS_AC_WRITE"
+                },
+                {
+                  "type": "XTENSA_OP_REG",
+                  "reg": "a3",
+                  "access": "CS_AC_READ"
+                },
+                {
+                  "type": "XTENSA_OP_REG",
+                  "reg": "a1",
+                  "access": "CS_AC_READ"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+]

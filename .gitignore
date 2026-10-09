@@ -1,0 +1,7 @@
+.dart_tool/
+build/
+.packages
+pubspec.lock
+ffigen.log
+.DS_Store
+._*

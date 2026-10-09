@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: windows-2022
+            architecture: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+          architecture: ${{ matrix.architecture }}
+      - run: dart pub get
+      - run: dart format --output=none --set-exit-if-changed lib hook tool test
+      - run: dart analyze
+      - run: dart test --concurrency=2
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart run tool/build_target.dart android arm64
