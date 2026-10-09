@@ -1,5 +1,5 @@
-name: capstone
-description: Bindings and immutable instruction details for Capstone 6
+name: disassembler
+description: Native instruction decoding with Zydis, exarmo and Capstone
 version: 0.1.0
 publish_to: none
 environment:
@@ -16,3 +16,16 @@ dev_dependencies:
   dart_style: ^3.1.13
   ffigen: ^23.0.0
   test: ^1.32.0
+hooks:
+  user_defines:
+    disassembler:
+      backends:
+        zydis:
+          architectures: [x86]
+          features: [decoder, encoder, formatter]
+        exarmo:
+          architectures: [arm, arm64]
+          features: [decoder]
+        capstone:
+          architectures: [arm, arm64, m68k, mips, ppc, sparc, systemz, xcore, x86, tms320c64x, m680x, evm, mos65xx, wasm, bpf, riscv, sh, tricore, alpha, hppa, loongarch, xtensa, arc]
+          features: [decoder]

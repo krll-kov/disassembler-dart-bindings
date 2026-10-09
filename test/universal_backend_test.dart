@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:capstone/capstone.dart';
+import 'package:disassembler/capstone.dart';
 import 'package:test/test.dart';
 
 const _modes = <String, int>{

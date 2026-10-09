@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import 'backend.dart';
 import 'src/generated/models.g.dart';
 import 'src/third_party/capstone.g.dart' as native;
 
@@ -92,6 +93,7 @@ final class Capstone {
     Syntax? syntax,
   }) : _skipData = skipData,
        _detailsEnabled = details {
+    requireBackend(DisassemblerBackend.capstone);
     final int version = native.cs_version(nullptr, nullptr);
     if (version != (native.CS_API_MAJOR << 8 | native.CS_API_MINOR)) {
       throw StateError('Capstone library and bindings versions differ');
@@ -294,12 +296,19 @@ final class Capstone {
 
 final class CapstoneBuffer {
   final int length;
+  final bool _owned;
   Pointer<Uint8> _data = nullptr;
   int _activeReaders = 0;
 
-  CapstoneBuffer(Uint8List bytes) : length = bytes.length {
+  CapstoneBuffer(Uint8List bytes) : length = bytes.length, _owned = true {
     _data = malloc<Uint8>(length == 0 ? 1 : length);
     _data.asTypedList(length).setAll(0, bytes);
+  }
+
+  CapstoneBuffer.borrowed(Pointer<Uint8> bytes, this.length) : _owned = false {
+    if (length < 0) throw RangeError.range(length, 0, null, 'length');
+    if (bytes == nullptr) throw ArgumentError.value(bytes, 'bytes');
+    _data = bytes;
   }
 
   void close() {
@@ -307,7 +316,7 @@ final class CapstoneBuffer {
       throw StateError('Cannot close buffer during decoding');
     }
     if (_data == nullptr) return;
-    malloc.free(_data);
+    if (_owned) malloc.free(_data);
     _data = nullptr;
   }
 }

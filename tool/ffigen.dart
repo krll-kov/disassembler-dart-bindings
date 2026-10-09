@@ -30,7 +30,7 @@ Future<void> main() async {
         'lib/src/third_party/capstone.record_use_mapping.g.dart',
       ),
       style: const NativeExternalBindings(
-        assetId: 'package:capstone/src/third_party/capstone.g.dart',
+        assetId: 'package:disassembler/disassembler.dart',
       ),
       commentType: const CommentType.none(),
       preamble: '''

@@ -18,6 +18,8 @@ jobs:
             architecture: arm64
           - runner: windows-2022
             architecture: x64
+          - runner: ubuntu-24.04
+            architecture: x64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -27,6 +29,8 @@ jobs:
         with:
           sdk: stable
           architecture: ${{ matrix.architecture }}
+      - run: rustup update stable --no-self-update
+      - run: rustup default stable
       - run: dart pub get
       - run: dart format --output=none --set-exit-if-changed lib hook tool test
       - run: dart analyze
@@ -40,5 +44,8 @@ jobs:
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: stable
+      - run: rustup update stable --no-self-update
+      - run: rustup default stable
+      - run: rustup target add aarch64-linux-android
       - run: dart pub get
-      - run: dart run tool/build_target.dart android arm64
+      - run: dart run tool/build_target.dart android arm64 zydis,exarmo,capstone

@@ -1,0 +1,19 @@
+{
+  "rustVersion": "1.93.0",
+  "rustRevision": "254b59607d4417e9dffbc307138ae5c86280fe4c",
+  "compilerBuiltinsVersion": "0.1.160",
+  "llvmRevision": "85a90d119deb25b518867cd37d62c7b93b575a6f",
+  "files": {
+    "COPYRIGHT": "rustc-1.93.0-aarch64-apple-darwin/COPYRIGHT",
+    "COPYRIGHT-library.html": "rustc-1.93.0-aarch64-apple-darwin/rustc/share/doc/rust/COPYRIGHT-library.html",
+    "LICENSE-MIT": "rustc-1.93.0-aarch64-apple-darwin/LICENSE-MIT",
+    "LICENSE-APACHE": "rustc-1.93.0-aarch64-apple-darwin/LICENSE-APACHE",
+    "version": "rustc-1.93.0-aarch64-apple-darwin/version",
+    "git-commit-hash": "rustc-1.93.0-aarch64-apple-darwin/git-commit-hash",
+    "compiler_builtins/LICENSE.txt": "https://raw.githubusercontent.com/rust-lang/rust/1.93.0/library/compiler-builtins/LICENSE.txt",
+    "compiler_builtins/CREDITS.TXT": "https://raw.githubusercontent.com/rust-lang/llvm-project/85a90d119deb25b518867cd37d62c7b93b575a6f/compiler-rt/CREDITS.TXT",
+    "libm/LICENSE.txt": "https://raw.githubusercontent.com/rust-lang/rust/1.93.0/library/compiler-builtins/libm/LICENSE.txt"
+  },
+  "versionSource": "https://raw.githubusercontent.com/rust-lang/rust/1.93.0/library/Cargo.lock",
+  "compilerArchive": "https://static.rust-lang.org/dist/rustc-1.93.0-aarch64-apple-darwin.tar.xz"
+}

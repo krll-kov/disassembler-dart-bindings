@@ -1,0 +1,24 @@
+[package]
+name = "exarmo_combined"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91.1"
+license = "BSD-3-Clause"
+
+[workspace]
+
+[lib]
+crate-type = ["staticlib"]
+
+[features]
+default = []
+arm = ["dep:exarmo-aarch32-capi"]
+aarch64 = ["dep:exarmo-aarch64-capi"]
+
+[dependencies]
+exarmo-aarch64-capi = { path = "../../third_party/exarmo/aarch64-capi", optional = true }
+exarmo-aarch32-capi = { path = "../../third_party/exarmo/aarch32-capi", optional = true }
+
+[profile.release]
+opt-level = 2
+panic = "unwind"

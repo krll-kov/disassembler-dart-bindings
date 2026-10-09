@@ -3,5 +3,6 @@ build/
 .packages
 pubspec.lock
 ffigen.log
+ffigen_*.log
 .DS_Store
 ._*

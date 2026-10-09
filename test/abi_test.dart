@@ -3,8 +3,8 @@
 
 import 'dart:ffi' as ffi;
 
-import 'package:capstone/capstone.dart';
-import 'package:capstone/src/third_party/capstone.g.dart' as native;
+import 'package:disassembler/capstone.dart';
+import 'package:disassembler/src/third_party/capstone.g.dart' as native;
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
 

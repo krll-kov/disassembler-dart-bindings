@@ -4,9 +4,9 @@ library;
 import 'dart:typed_data';
 import 'dart:ffi';
 
-import 'package:capstone/capstone.dart';
-import 'package:capstone/instructions.dart' as native;
-import 'package:capstone/native.dart' as raw;
+import 'package:disassembler/capstone.dart';
+import 'package:disassembler/instructions.dart' as native;
+import 'package:disassembler/native.dart' as raw;
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
 

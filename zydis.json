@@ -1,0 +1,86 @@
+{
+  "repository": "https://github.com/zyantific/zydis.git",
+  "tag": "v4.1.1",
+  "commit": "a2278f1d254e492f6a6b39f6cb5d1f5d515659dc",
+  "zycore": {
+    "repository": "https://github.com/zyantific/zycore-c.git",
+    "version": "1.5.2",
+    "commit": "0b2432ced0884fd152b471d97ecf0258ff4d859f"
+  },
+  "includes": [
+    "third_party/zydis/include",
+    "third_party/zydis/src",
+    "third_party/zycore/include"
+  ],
+  "defines": [
+    "ZYDIS_SHOULD_EXPORT",
+    "ZYCORE_STATIC_BUILD"
+  ],
+  "linuxDefines": [
+    "_GNU_SOURCE"
+  ],
+  "sources": [
+    "third_party/zydis/src/MetaInfo.c",
+    "third_party/zydis/src/Mnemonic.c",
+    "third_party/zydis/src/Register.c",
+    "third_party/zydis/src/Segment.c",
+    "third_party/zydis/src/SharedData.c",
+    "third_party/zydis/src/String.c",
+    "third_party/zydis/src/Utils.c",
+    "third_party/zydis/src/Zydis.c",
+    "third_party/zydis/src/Decoder.c",
+    "third_party/zydis/src/DecoderData.c",
+    "third_party/zydis/src/Encoder.c",
+    "third_party/zydis/src/EncoderData.c",
+    "third_party/zydis/src/Disassembler.c",
+    "third_party/zydis/src/Formatter.c",
+    "third_party/zydis/src/FormatterBuffer.c",
+    "third_party/zydis/src/FormatterATT.c",
+    "third_party/zydis/src/FormatterBase.c",
+    "third_party/zydis/src/FormatterIntel.c",
+    "third_party/zycore/src/API/Memory.c",
+    "third_party/zycore/src/API/Process.c",
+    "third_party/zycore/src/API/Synchronization.c",
+    "third_party/zycore/src/API/Terminal.c",
+    "third_party/zycore/src/API/Thread.c",
+    "third_party/zycore/src/Allocator.c",
+    "third_party/zycore/src/ArgParse.c",
+    "third_party/zycore/src/Bitset.c",
+    "third_party/zycore/src/Format.c",
+    "third_party/zycore/src/List.c",
+    "third_party/zycore/src/String.c",
+    "third_party/zycore/src/Vector.c",
+    "third_party/zycore/src/Zycore.c"
+  ],
+  "sourceGroups": {
+    "decoder": [
+      "third_party/zydis/src/Decoder.c",
+      "third_party/zydis/src/DecoderData.c"
+    ],
+    "encoder": [
+      "third_party/zydis/src/Encoder.c",
+      "third_party/zydis/src/EncoderData.c"
+    ],
+    "formatter": [
+      "third_party/zydis/src/Disassembler.c",
+      "third_party/zydis/src/Formatter.c",
+      "third_party/zydis/src/FormatterBuffer.c",
+      "third_party/zydis/src/FormatterATT.c",
+      "third_party/zydis/src/FormatterBase.c",
+      "third_party/zydis/src/FormatterIntel.c"
+    ]
+  },
+  "features": {
+    "decoder": true,
+    "encoder": true,
+    "formatter": true,
+    "avx512": true,
+    "knc": true,
+    "segment": true,
+    "minimalMode": false
+  },
+  "licenses": [
+    "third_party/zydis/LICENSE",
+    "third_party/zycore/LICENSE"
+  ]
+}

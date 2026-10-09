@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:capstone/capstone.dart';
-import 'package:capstone/constants.dart';
+import 'package:disassembler/capstone.dart';
+import 'package:disassembler/constants.dart';
 import 'package:test/test.dart';
 
 void main() {

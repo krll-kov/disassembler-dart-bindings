@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:capstone/capstone.dart';
+import 'package:disassembler/capstone.dart';
 
 void main() {
   final Capstone decoder = Capstone(Architecture.x86, mode: Mode.mode64);
