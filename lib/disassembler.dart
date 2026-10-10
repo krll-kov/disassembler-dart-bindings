@@ -425,6 +425,7 @@ final class DecodedBatch {
   int _start = 0;
   int _address = 0;
   int _stop = 0;
+  int _count = 0;
   bool _closed = false;
 
   static final Finalizer<Pointer<native.disassembler_batch>> _finalizer =
@@ -478,9 +479,10 @@ final class DecodedBatch {
     _start = start;
     _address = address;
     _stop = stop;
+    _count = _native.ref.count;
   }
 
-  int get length => _closed ? 0 : _native.ref.count;
+  int get length => _count;
 
   int get consumed => _native.ref.consumed;
 
@@ -498,7 +500,13 @@ final class DecodedBatch {
   }
 
   int _word(int index, int field) {
-    RangeError.checkValidIndex(index, this, 'index', length);
+    if (index < 0 || index >= _count)
+      throw IndexError.withLength(
+        index,
+        _count,
+        indexable: this,
+        name: 'index',
+      );
     return _instructions[index * native.DISASSEMBLER_INSTRUCTION_STRIDE +
         field];
   }
@@ -586,7 +594,9 @@ final class DecodedBatch {
   }
 
   int _operand(int index, int operand, int field) {
-    RangeError.checkValidIndex(operand, null, 'operand', operandCount(index));
+    final int count = operandCount(index);
+    if (operand < 0 || operand >= count)
+      throw IndexError.withLength(operand, count, name: 'operand');
     final int base = (_word(index, 6) & 0xffffffff) + operand;
     return _operands[base * native.DISASSEMBLER_OPERAND_STRIDE + field];
   }
@@ -702,6 +712,7 @@ final class DecodedBatch {
   void close() {
     if (_closed) return;
     _closed = true;
+    _count = 0;
     _finalizer.detach(this);
     _free(_native);
   }
