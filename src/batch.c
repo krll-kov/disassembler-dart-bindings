@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <ctype.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -1257,3 +1258,41 @@ void disassembler_close(void* context) {
 #endif
   free(c);
 }
+
+#if defined(DISASSEMBLER_EXARMO_ARM) || defined(DISASSEMBLER_EXARMO_AARCH64)
+#if defined(_MSC_VER)
+#define DISASSEMBLER_THREAD_LOCAL __declspec(thread)
+#else
+#define DISASSEMBLER_THREAD_LOCAL _Thread_local
+#endif
+
+// exarmo builds without std, so a decoder panic returns here by longjmp, and
+// these sit beside disassembler_open because the link hook takes C objects
+// from an archive only for symbols that are still undefined
+static DISASSEMBLER_THREAD_LOCAL jmp_buf* exarmo_guard;
+
+bool exarmo_capi_try(void (*body)(void*), void* state) {
+  jmp_buf here;
+  jmp_buf* outer = exarmo_guard;
+  exarmo_guard = &here;
+  if (setjmp(here) != 0) {
+    exarmo_guard = outer;
+    return false;
+  }
+  body(state);
+  exarmo_guard = outer;
+  return true;
+}
+
+void exarmo_capi_panic(void) {
+  jmp_buf* target = exarmo_guard;
+  if (target == NULL) abort();
+  longjmp(*target, 1);
+}
+
+uint32_t disassembler_exarmo_guard_probe(bool fail);
+
+DISASSEMBLER_API uint32_t disassembler_exarmo_probe(bool fail) {
+  return disassembler_exarmo_guard_probe(fail);
+}
+#endif

@@ -248,7 +248,6 @@ CLibrary disassemblerLibrary(
       throw ArgumentError('exarmo requires its Rust archive');
     }
     sources.add(root.resolve('src/exarmo_exports.c').toFilePath());
-    sources.add(root.resolve('src/exarmo_guard.c').toFilePath());
   }
   return CLibrary(
     name: libraryName(targetOS),
