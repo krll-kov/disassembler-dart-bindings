@@ -499,7 +499,8 @@ final class DecodedBatch {
 
   int _word(int index, int field) {
     RangeError.checkValidIndex(index, this, 'index', length);
-    return _instructions[index * native.DISASSEMBLER_INSTRUCTION_STRIDE + field];
+    return _instructions[index * native.DISASSEMBLER_INSTRUCTION_STRIDE +
+        field];
   }
 
   int address(int index) => _word(index, 0);
@@ -536,8 +537,8 @@ final class DecodedBatch {
 
   String mnemonic(int index) {
     final int key = _word(index, 4);
-    if (key < 0 || _engine!.backend != DisassemblerBackend.capstone &&
-        !valid(index)) {
+    if (key < 0 ||
+        _engine!.backend != DisassemblerBackend.capstone && !valid(index)) {
       return '';
     }
     return _engine!._backend.mnemonic(key);
@@ -585,12 +586,7 @@ final class DecodedBatch {
   }
 
   int _operand(int index, int operand, int field) {
-    RangeError.checkValidIndex(
-      operand,
-      null,
-      'operand',
-      operandCount(index),
-    );
+    RangeError.checkValidIndex(operand, null, 'operand', operandCount(index));
     final int base = (_word(index, 6) & 0xffffffff) + operand;
     return _operands[base * native.DISASSEMBLER_OPERAND_STRIDE + field];
   }
@@ -638,8 +634,7 @@ final class DecodedBatch {
 
   int memoryScale(int index, int operand) => _operand(index, operand, 0) >> 56;
 
-  int memoryDisplacement(int index, int operand) =>
-      _operand(index, operand, 6);
+  int memoryDisplacement(int index, int operand) => _operand(index, operand, 6);
 
   bool memoryAbsolute(int index, int operand) =>
       _operand(index, operand, 0) & (1 << 25) != 0;

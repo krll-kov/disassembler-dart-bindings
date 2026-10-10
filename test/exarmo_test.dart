@@ -199,9 +199,8 @@ void main() {
     addTearDown(reader.close);
     final common.DecodedBatch batch = common.DecodedBatch();
     reader.decode(batch);
-    final int invalid = [
-      for (int i = 0; i < batch.length; i++) i,
-    ].firstWhere((int i) => !batch.valid(i));
+    final int invalid = [for (int i = 0; i < batch.length; i++) i]
+        .firstWhere((int i) => !batch.valid(i));
     expect(batch.bytes(invalid), bytes.sublist(4, 8));
     batch.close();
     expect(() => batch.bytes(invalid), throwsRangeError);
