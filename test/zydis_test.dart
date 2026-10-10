@@ -316,6 +316,47 @@ void main() {
     );
   });
 
+  test(
+    'Zydis retained views reject bytes and register access after callback',
+    () {
+      ZydisInstructionView? saved;
+      decoder.visit(Uint8List.fromList([0x48, 0x01, 0xd8]), (view) {
+        saved = view;
+        expect(view.bytes, [0x48, 0x01, 0xd8]);
+        expect(view.bytes, [0x48, 0x01, 0xd8]);
+        final actions = view.registerActions;
+        expect(view.registerActions, actions);
+        expect(view.registersRead, contains(ZydisRegister.ZYDIS_REGISTER_RBX));
+        expect(
+          view.registersWritten,
+          contains(ZydisRegister.ZYDIS_REGISTER_RAX),
+        );
+        final operand = view.operand(1);
+        operand.actions = ZydisOperandAction.ZYDIS_OPERAND_ACTION_WRITE;
+        operand.unnamed.reg.value = ZydisRegister.ZYDIS_REGISTER_RCX;
+        expect(
+          view.registerActions,
+          isNot(contains(ZydisRegister.ZYDIS_REGISTER_RBX)),
+        );
+        expect(
+          view.registersRead,
+          isNot(contains(ZydisRegister.ZYDIS_REGISTER_RCX)),
+        );
+        expect(
+          view.registersWritten,
+          contains(ZydisRegister.ZYDIS_REGISTER_RCX),
+        );
+        expect(() => view.bytes[0] = 0, throwsUnsupportedError);
+        expect(() => actions.clear(), throwsUnsupportedError);
+        return true;
+      });
+      expect(() => saved!.bytes, throwsStateError);
+      expect(() => saved!.registerActions, throwsStateError);
+      expect(() => saved!.registersRead, throwsStateError);
+      expect(() => saved!.registersWritten, throwsStateError);
+    },
+  );
+
   test('Zydis reads supplied native buffer without taking ownership', () {
     final Pointer<Uint8> bytes = calloc(2);
     try {
@@ -323,6 +364,15 @@ void main() {
       final List<String> mnemonics = [];
       decoder.visitPointer(bytes, 2, (view) {
         mnemonics.add(view.copy().mnemonic);
+        if (view.address == 0) {
+          final copied = view.copy();
+          final borrowed = view.bytes;
+          bytes[0] = 0xcc;
+          expect(view.bytes[0], 0xcc);
+          expect(borrowed[0], 0xcc);
+          expect(copied.bytes[0], 0x90);
+          bytes[0] = 0x90;
+        }
         return true;
       });
       expect(mnemonics, ['nop', 'ret']);

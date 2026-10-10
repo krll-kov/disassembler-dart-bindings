@@ -107,6 +107,7 @@ final class ZydisInstructionView {
   final int status;
   final int size;
   final Pointer<Uint8> _bytes;
+  Uint8List? _byteView;
 
   ZydisInstructionView._(
     this._decoder,
@@ -121,7 +122,7 @@ final class ZydisInstructionView {
 
   Uint8List get bytes {
     _check();
-    return _bytes.asTypedList(size).asUnmodifiableView();
+    return _byteView ??= _bytes.asTypedList(size).asUnmodifiableView();
   }
 
   int get operandCount => valid ? details.operand_count : 0;
@@ -223,6 +224,7 @@ final class Zydis {
   bool _active = false;
   int _epoch = 0;
   Map<String, int>? _registerIds;
+  final Map<int, String> _registerNames = {};
 
   factory Zydis({
     int machineMode = native.ZydisMachineMode.ZYDIS_MACHINE_MODE_LONG_64,
@@ -361,7 +363,14 @@ final class Zydis {
 
   String registerName(int register) {
     _checkOpen();
-    return _nativeString(native.ZydisRegisterGetString(register));
+    if (register < 0 ||
+        register > native.ZydisRegister.ZYDIS_REGISTER_MAX_VALUE) {
+      return _nativeString(native.ZydisRegisterGetString(register));
+    }
+    return _registerNames.putIfAbsent(
+      register,
+      () => _nativeString(native.ZydisRegisterGetString(register)),
+    );
   }
 
   int registerId(String name) {

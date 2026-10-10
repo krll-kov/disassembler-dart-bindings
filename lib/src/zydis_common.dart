@@ -3,6 +3,7 @@ part of '../disassembler.dart';
 final class _ZydisDecoder extends _Decoder {
   final DisassemblerArch architecture;
   final zydis.Zydis engine;
+  final Map<int, String> _mnemonics = {};
 
   factory _ZydisDecoder(DisassemblerArch architecture) {
     if (architecture != DisassemblerArch.x86 &&
@@ -95,8 +96,12 @@ final class _ZydisInstructionView extends InstructionView {
   }
 
   @override
-  String get mnemonic =>
-      valid ? zy.ZydisMnemonicGetString(id).cast<Utf8>().toDartString() : '';
+  String get mnemonic => valid
+      ? _decoder._mnemonics.putIfAbsent(
+          id,
+          () => zy.ZydisMnemonicGetString(id).cast<Utf8>().toDartString(),
+        )
+      : '';
 
   @override
   String get canonicalMnemonic => _x86CanonicalMnemonic(mnemonic);
@@ -175,9 +180,23 @@ final class _ZydisInstructionView extends InstructionView {
   RegisterAccess? get registerAccess {
     _check();
     if (!valid) return null;
-    return _registers ??= RegisterAccess(
-      read: _view.registersRead,
-      written: _view.registersWritten,
+    if (_registers != null) return _registers;
+    final Map<int, int> actions = _view.registerActions;
+    return _registers = RegisterAccess(
+      read: [
+        for (final entry in actions.entries)
+          if (entry.value &
+                  zy.ZydisOperandAction.ZYDIS_OPERAND_ACTION_MASK_READ !=
+              0)
+            entry.key,
+      ],
+      written: [
+        for (final entry in actions.entries)
+          if (entry.value &
+                  zy.ZydisOperandAction.ZYDIS_OPERAND_ACTION_MASK_WRITE !=
+              0)
+            entry.key,
+      ],
     );
   }
 

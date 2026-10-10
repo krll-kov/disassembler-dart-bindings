@@ -148,6 +148,38 @@ void main() {
     expect(instruction.operands.first.access, isNull);
   });
 
+  test('Zydis rejects retained common fields after callback and closure', () {
+    final decoder = Disassembler(
+      DisassemblerArch.x64,
+      backend: DisassemblerBackend.zydis,
+    );
+    final buffer = DisassemblerBuffer(Uint8List.fromList([0x48, 0x01, 0xd8]));
+    final reader = decoder.reader(buffer);
+    InstructionView? saved;
+    expect(decoder.registerName(1), isNotEmpty);
+    reader.visit((instruction) {
+      saved = instruction;
+      expect(instruction.mnemonic, 'add');
+      expect(instruction.canonicalMnemonic, 'add');
+      expect(instruction.writesFlags, isTrue);
+      expect(instruction.registerAccess, isNotNull);
+      expect(instruction.bytes, [0x48, 0x01, 0xd8]);
+      expect(instruction.mnemonic, 'add');
+      expect(instruction.writesFlags, isTrue);
+      return true;
+    });
+    expect(() => saved!.mnemonic, throwsStateError);
+    expect(() => saved!.canonicalMnemonic, throwsStateError);
+    expect(() => saved!.writesFlags, throwsStateError);
+    expect(() => saved!.registerAccess, throwsStateError);
+    expect(() => saved!.bytes, throwsStateError);
+    reader.close();
+    buffer.close();
+    decoder.close();
+    expect(() => decoder.registerName(1), throwsStateError);
+    expect(() => saved!.registersWritten, throwsStateError);
+  });
+
   for (final DisassemblerBackend backend in [
     DisassemblerBackend.capstone,
     DisassemblerBackend.zydis,
