@@ -1,0 +1,1259 @@
+// Copyright (c) 2026, swiftsoft
+// SPDX-License-Identifier: BSD-3-Clause
+
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "batch.h"
+#include "disassembler.h"
+
+#if defined(DISASSEMBLER_ZYDIS)
+#include <Zydis/Zydis.h>
+#endif
+#if defined(DISASSEMBLER_CAPSTONE)
+#include <capstone/capstone.h>
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM)
+#include "../third_party/exarmo/aarch32-capi/include/exarmo/aarch32.h"
+#endif
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+#include "../third_party/exarmo/aarch64-capi/include/exarmo/aarch64.h"
+#endif
+
+enum {
+  kBackendZydis = 0,
+  kBackendExarmo = 1,
+  kBackendCapstone = 2,
+};
+
+enum {
+  kArchX86 = 0,
+  kArchX64 = 1,
+  kArchArm = 2,
+  kArchThumb = 3,
+  kArchArm64 = 4,
+};
+
+enum {
+  kFlowNone = 0,
+  kFlowCall = 1,
+  kFlowJump = 2,
+  kFlowReturn = 3,
+  kFlowInterrupt = 4,
+};
+
+enum {
+  kKindRegister = 0,
+  kKindImmediate = 1,
+  kKindMemory = 2,
+  kKindOther = 3,
+};
+
+enum {
+  kShiftNone = 0,
+  kShiftLsl = 1,
+  kShiftLsr = 2,
+  kShiftAsr = 3,
+  kShiftRor = 4,
+  kShiftMsl = 5,
+};
+
+enum {
+  kExtendNone = 0,
+  kExtendUxtb = 1,
+  kExtendUxth = 2,
+  kExtendUxtw = 3,
+  kExtendUxtx = 4,
+  kExtendSxtb = 5,
+  kExtendSxth = 6,
+  kExtendSxtw = 7,
+  kExtendSxtx = 8,
+};
+
+enum {
+  kFlagValid = 1 << 0,
+  kFlagConditional = 1 << 4,
+  kFlagWriteback = 1 << 5,
+  kFlagPostIndex = 1 << 6,
+  kFlagVector = 1 << 7,
+  kFlagWritesFlagsKnown = 1 << 8,
+  kFlagWritesFlags = 1 << 9,
+  kFlagRegisterAccess = 1 << 10,
+};
+
+#define kConditionMnemonic 31
+
+typedef struct Operand {
+  int kind;
+  int access;
+  bool has_access;
+  int size;
+  int shift;
+  int extend;
+  bool zeroing;
+  bool absolute;
+  int broadcast;
+  int element_bits;
+  int lanes;
+  int scale;
+  int64_t reg;
+  int64_t immediate;
+  int64_t base;
+  int64_t index;
+  int64_t segment;
+  int64_t displacement;
+  int64_t shift_value;
+} Operand;
+
+typedef struct Context {
+  int backend;
+  int architecture;
+#if defined(DISASSEMBLER_ZYDIS)
+  ZydisDecoder zydis;
+#endif
+#if defined(DISASSEMBLER_CAPSTONE)
+  csh capstone;
+  cs_insn* insn;
+  char (*mnemonics)[32];
+  int32_t mnemonic_count;
+  int32_t mnemonic_capacity;
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM)
+  exarmo_aarch32_it_state it;
+#endif
+} Context;
+
+static void WriteOperand(disassembler_batch* batch, const Operand* o) {
+  int64_t* r =
+      batch->operands + (int64_t)batch->operand_count * DISASSEMBLER_OPERAND_STRIDE;
+  r[0] = (int64_t)(o->kind & 7) | (o->has_access ? 1 << 3 : 0) |
+         (int64_t)(o->access & 3) << 4 | (int64_t)(o->size & 0xff) << 8 |
+         (int64_t)(o->shift & 0xf) << 16 | (int64_t)(o->extend & 0xf) << 20 |
+         (o->zeroing ? 1 << 24 : 0) | (o->absolute ? 1 << 25 : 0) |
+         (int64_t)(o->broadcast & 0xff) << 32 |
+         (int64_t)(o->element_bits & 0xff) << 40 |
+         (int64_t)(o->lanes & 0xff) << 48 | (int64_t)(uint8_t)(int8_t)o->scale
+                                                << 56;
+  r[1] = o->reg;
+  r[2] = o->immediate;
+  r[3] = o->base;
+  r[4] = o->index;
+  r[5] = o->segment;
+  r[6] = o->displacement;
+  r[7] = o->shift_value;
+  batch->operand_count++;
+}
+
+typedef struct Record {
+  uint64_t address;
+  uint32_t size;
+  int operand_count;
+  int immediate_size;
+  int condition;
+  int64_t flags;
+  int flow;
+  int64_t id;
+  int64_t mnemonic;
+  int64_t canonical;
+  int64_t extra;
+  int32_t operand_start;
+  int32_t register_start;
+  int read_count;
+  int written_count;
+  uint32_t status;
+} Record;
+
+static void InitRecord(Record* r, const disassembler_batch* batch,
+                       uint64_t address) {
+  memset(r, 0, sizeof(*r));
+  r->address = address;
+  r->operand_start = batch->operand_count;
+  r->register_start = batch->register_count;
+  r->mnemonic = -1;
+  r->canonical = -1;
+}
+
+static void WriteRecord(disassembler_batch* batch, const Record* r) {
+  int64_t* out = batch->instructions +
+                 (int64_t)batch->count * DISASSEMBLER_INSTRUCTION_STRIDE;
+  out[0] = (int64_t)r->address;
+  out[1] = (int64_t)r->size | (int64_t)(r->operand_count & 0xff) << 32 |
+           (int64_t)(r->immediate_size & 0xff) << 40 |
+           (int64_t)(r->condition & 0x1f) << 48;
+  out[2] = r->flags | (int64_t)(r->flow & 7) << 1;
+  out[3] = r->id;
+  out[4] = r->mnemonic;
+  out[5] = (r->canonical & 0xffffffff) | r->extra << 32;
+  out[6] = (int64_t)(uint32_t)r->operand_start |
+           (int64_t)(uint32_t)r->register_start << 32;
+  out[7] = (int64_t)(r->read_count & 0xffff) |
+           (int64_t)(r->written_count & 0xffff) << 16 |
+           (int64_t)r->status << 32;
+  batch->count++;
+}
+
+static bool Stops(uint32_t stop, int flow, bool valid) {
+  if (!valid) return (stop & DISASSEMBLER_STOP_INVALID) != 0;
+  switch (flow) {
+    case kFlowJump: return (stop & DISASSEMBLER_STOP_JUMP) != 0;
+    case kFlowCall: return (stop & DISASSEMBLER_STOP_CALL) != 0;
+    case kFlowReturn: return (stop & DISASSEMBLER_STOP_RETURN) != 0;
+    case kFlowInterrupt: return (stop & DISASSEMBLER_STOP_INTERRUPT) != 0;
+    default: return false;
+  }
+}
+
+static bool HasRoom(const disassembler_batch* batch, int limit, int operands,
+                    int registers) {
+  return batch->count < limit &&
+         batch->operand_count + operands <= batch->operand_capacity &&
+         batch->register_count + registers <= batch->register_capacity;
+}
+
+static int ArmConditionCode(int value) {
+  return value >= 0 && value <= 13 ? value + 1 : 0;
+}
+
+#if defined(DISASSEMBLER_ZYDIS)
+
+static const char* kCanonicalJumps[][2] = {
+    {"jz", "je"},    {"jnz", "jne"},  {"jc", "jb"},    {"jnae", "jb"},
+    {"jnc", "jae"},  {"jnb", "jae"},  {"jna", "jbe"},  {"jnbe", "ja"},
+    {"jpe", "jp"},   {"jpo", "jnp"},  {"jnge", "jl"},  {"jnl", "jge"},
+    {"jng", "jle"},  {"jnle", "jg"},  {"sal", "shl"},
+};
+
+static int ZydisFlow(const ZydisDecodedInstruction* ins) {
+  switch (ins->meta.category) {
+    case ZYDIS_CATEGORY_CALL: return kFlowCall;
+    case ZYDIS_CATEGORY_RET: return kFlowReturn;
+    case ZYDIS_CATEGORY_COND_BR:
+    case ZYDIS_CATEGORY_UNCOND_BR: return kFlowJump;
+    case ZYDIS_CATEGORY_INTERRUPT: return kFlowInterrupt;
+    default: return kFlowNone;
+  }
+}
+
+static int ZydisBroadcast(ZydisBroadcastMode mode) {
+  switch (mode) {
+    case ZYDIS_BROADCAST_MODE_1_TO_2: return 2;
+    case ZYDIS_BROADCAST_MODE_1_TO_4: return 4;
+    case ZYDIS_BROADCAST_MODE_1_TO_8: return 8;
+    case ZYDIS_BROADCAST_MODE_1_TO_16: return 16;
+    case ZYDIS_BROADCAST_MODE_1_TO_32: return 32;
+    case ZYDIS_BROADCAST_MODE_1_TO_64: return 64;
+    default: return 0;
+  }
+}
+
+typedef struct RegisterAction {
+  uint32_t reg;
+  uint32_t actions;
+} RegisterAction;
+
+static void AddAction(RegisterAction* list, int* count, uint32_t reg,
+                      uint32_t actions) {
+  if (reg == ZYDIS_REGISTER_NONE) return;
+  for (int i = 0; i < *count; i++) {
+    if (list[i].reg == reg) {
+      list[i].actions |= actions;
+      return;
+    }
+  }
+  list[*count].reg = reg;
+  list[*count].actions = actions;
+  (*count)++;
+}
+
+static int32_t DecodeZydis(Context* c, const uint8_t* bytes, int64_t length,
+                           uint64_t address, int32_t limit, uint32_t stop,
+                           disassembler_batch* batch) {
+  const int max_registers = 2 * 3 * ZYDIS_MAX_OPERAND_COUNT;
+  ZydisDecodedInstruction ins;
+  ZydisDecodedOperand ops[ZYDIS_MAX_OPERAND_COUNT];
+  int64_t at = 0;
+  while (at < length && HasRoom(batch, limit, ZYDIS_MAX_OPERAND_COUNT_VISIBLE,
+                                max_registers)) {
+    int64_t available = length - at;
+    if (available > ZYDIS_MAX_INSTRUCTION_LENGTH)
+      available = ZYDIS_MAX_INSTRUCTION_LENGTH;
+    const ZyanStatus status = ZydisDecoderDecodeFull(
+        &c->zydis, bytes + at, (ZyanUSize)available, &ins, ops);
+    Record r;
+    InitRecord(&r, batch, address + (uint64_t)at);
+    r.status = (uint32_t)status;
+    if (!ZYAN_SUCCESS(status)) {
+      r.size = 1;
+      WriteRecord(batch, &r);
+      at += 1;
+      if (Stops(stop, kFlowNone, false)) break;
+      continue;
+    }
+    r.size = ins.length;
+    r.id = ins.mnemonic;
+    r.mnemonic = ins.mnemonic;
+    r.canonical = ins.mnemonic;
+    r.flow = ZydisFlow(&ins);
+    r.flags = kFlagValid | kFlagRegisterAccess | kFlagWritesFlagsKnown;
+    if (ins.meta.category == ZYDIS_CATEGORY_COND_BR) {
+      r.flags |= kFlagConditional;
+      r.condition = kConditionMnemonic;
+    }
+    r.immediate_size = ins.raw.imm[0].size / 8;
+    if (ins.encoding == ZYDIS_INSTRUCTION_ENCODING_VEX ||
+        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_EVEX ||
+        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_XOP ||
+        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_MVEX)
+      r.flags |= kFlagVector;
+    for (int i = 0; i < ins.operand_count_visible; i++) {
+      const ZydisDecodedOperand* op = &ops[i];
+      Operand o;
+      memset(&o, 0, sizeof(o));
+      switch (op->type) {
+        case ZYDIS_OPERAND_TYPE_REGISTER: o.kind = kKindRegister; break;
+        case ZYDIS_OPERAND_TYPE_IMMEDIATE: o.kind = kKindImmediate; break;
+        case ZYDIS_OPERAND_TYPE_MEMORY: o.kind = kKindMemory; break;
+        default: o.kind = kKindOther; break;
+      }
+      o.has_access = true;
+      if (op->actions & ZYDIS_OPERAND_ACTION_MASK_READ) o.access |= 1;
+      if (op->actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) o.access |= 2;
+      if (o.kind == kKindImmediate) {
+        int64_t value = op->imm.is_signed ? op->imm.value.s
+                                          : (int64_t)op->imm.value.u;
+        if (op->imm.is_relative) {
+          value += (int64_t)r.address + ins.length;
+          if (c->architecture == kArchX86) value &= 0xffffffff;
+        }
+        o.immediate = value;
+      }
+      if (o.kind == kKindRegister) o.reg = op->reg.value;
+      o.size = (op->size + 7) / 8;
+      o.zeroing = (o.access & 2) != 0 &&
+                  (ins.avx.mask.mode == ZYDIS_MASK_MODE_ZEROING ||
+                   ins.avx.mask.mode == ZYDIS_MASK_MODE_CONTROL_ZEROING);
+      if (o.kind == kKindMemory) {
+        o.broadcast = ZydisBroadcast(ins.avx.broadcast.mode);
+        o.base = op->mem.base;
+        o.index = op->mem.index;
+        o.segment = op->mem.segment;
+        o.scale = op->mem.scale;
+        o.displacement = op->mem.disp.has_displacement ? op->mem.disp.value : 0;
+      } else {
+        o.scale = 1;
+      }
+      o.element_bits = op->element_size;
+      o.lanes = op->element_count;
+      WriteOperand(batch, &o);
+      r.operand_count++;
+    }
+    RegisterAction actions[2 * 3 * ZYDIS_MAX_OPERAND_COUNT];
+    int action_count = 0;
+    for (int i = 0; i < ins.operand_count; i++) {
+      const ZydisDecodedOperand* op = &ops[i];
+      if (op->type == ZYDIS_OPERAND_TYPE_REGISTER) {
+        AddAction(actions, &action_count, op->reg.value, op->actions);
+      } else if (op->type == ZYDIS_OPERAND_TYPE_MEMORY) {
+        AddAction(actions, &action_count, op->mem.segment,
+                  ZYDIS_OPERAND_ACTION_READ);
+        AddAction(actions, &action_count, op->mem.base,
+                  ZYDIS_OPERAND_ACTION_READ);
+        AddAction(actions, &action_count, op->mem.index,
+                  ZYDIS_OPERAND_ACTION_READ);
+      }
+    }
+    for (int i = 0; i < action_count; i++) {
+      if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_READ)
+        batch->registers[batch->register_count + r.read_count++] =
+            actions[i].reg;
+    }
+    for (int i = 0; i < action_count; i++) {
+      if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) {
+        batch->registers[batch->register_count + r.read_count +
+                         r.written_count++] = actions[i].reg;
+        if (actions[i].reg == ZYDIS_REGISTER_FLAGS ||
+            actions[i].reg == ZYDIS_REGISTER_EFLAGS ||
+            actions[i].reg == ZYDIS_REGISTER_RFLAGS)
+          r.flags |= kFlagWritesFlags;
+      }
+    }
+    batch->register_count += r.read_count + r.written_count;
+    WriteRecord(batch, &r);
+    at += ins.length;
+    if (Stops(stop, r.flow, true)) break;
+  }
+  batch->consumed = at;
+  return DISASSEMBLER_STATUS_OK;
+}
+
+#endif
+
+#if defined(DISASSEMBLER_EXARMO_ARM) || defined(DISASSEMBLER_EXARMO_AARCH64)
+
+static int64_t ExarmoRegister(int architecture, int reg_class, int number) {
+  if (number < 0 || number > 255) return 0;
+  if (architecture == kArchArm64) {
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+    if (reg_class == EXARMO_AARCH64_REG_W_SP && number != 31)
+      reg_class = EXARMO_AARCH64_REG_W;
+    else if (reg_class == EXARMO_AARCH64_REG_X_SP && number != 31)
+      reg_class = EXARMO_AARCH64_REG_X;
+    if (number > 31) return 0;
+    switch (reg_class) {
+      case EXARMO_AARCH64_REG_W:
+      case EXARMO_AARCH64_REG_W_SP:
+      case EXARMO_AARCH64_REG_X:
+      case EXARMO_AARCH64_REG_X_SP:
+      case EXARMO_AARCH64_REG_B:
+      case EXARMO_AARCH64_REG_H:
+      case EXARMO_AARCH64_REG_S:
+      case EXARMO_AARCH64_REG_D:
+      case EXARMO_AARCH64_REG_Q:
+      case EXARMO_AARCH64_REG_V:
+      case EXARMO_AARCH64_REG_Z: break;
+      case EXARMO_AARCH64_REG_P:
+      case EXARMO_AARCH64_REG_PN:
+      case EXARMO_AARCH64_REG_ZA_TILE:
+        if (number >= 16) return 0;
+        break;
+      case EXARMO_AARCH64_REG_ZT0:
+        if (number != 0) return 0;
+        break;
+      default: return 0;
+    }
+    return 0x20000 | reg_class << 8 | number;
+#else
+    return 0;
+#endif
+  }
+#if defined(DISASSEMBLER_EXARMO_ARM)
+  switch (reg_class) {
+    case EXARMO_AARCH32_REG_CORE:
+      if (number > 15) return 0;
+      break;
+    case EXARMO_AARCH32_REG_S:
+    case EXARMO_AARCH32_REG_D:
+      if (number >= 32) return 0;
+      break;
+    case EXARMO_AARCH32_REG_Q:
+      if (number >= 16) return 0;
+      break;
+    default: return 0;
+  }
+  return 0x10000 | reg_class << 8 | number;
+#else
+  return 0;
+#endif
+}
+
+static void InvalidExarmo(disassembler_batch* batch, uint64_t address,
+                          uint32_t size, uint32_t status) {
+  Record r;
+  InitRecord(&r, batch, address);
+  r.size = size;
+  r.status = status;
+  WriteRecord(batch, &r);
+}
+
+#endif
+
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+
+static int ExarmoFlow64(int kind) {
+  switch (kind) {
+    case EXARMO_AARCH64_BRANCH_DIRECT:
+    case EXARMO_AARCH64_BRANCH_INDIRECT: return kFlowJump;
+    case EXARMO_AARCH64_BRANCH_DIRECT_CALL:
+    case EXARMO_AARCH64_BRANCH_INDIRECT_CALL: return kFlowCall;
+    case EXARMO_AARCH64_BRANCH_RETURN:
+    case EXARMO_AARCH64_BRANCH_EXCEPTION_RETURN: return kFlowReturn;
+    case EXARMO_AARCH64_BRANCH_SYSTEM_CALL:
+    case EXARMO_AARCH64_BRANCH_EXCEPTION:
+    case EXARMO_AARCH64_BRANCH_HALT: return kFlowInterrupt;
+    default: return kFlowNone;
+  }
+}
+
+static int Extend64(bool present, int kind) {
+  if (!present) return kExtendNone;
+  switch (kind) {
+    case EXARMO_AARCH64_MOD_UXTB: return kExtendUxtb;
+    case EXARMO_AARCH64_MOD_UXTH: return kExtendUxth;
+    case EXARMO_AARCH64_MOD_UXTW: return kExtendUxtw;
+    case EXARMO_AARCH64_MOD_UXTX: return kExtendUxtx;
+    case EXARMO_AARCH64_MOD_SXTB: return kExtendSxtb;
+    case EXARMO_AARCH64_MOD_SXTH: return kExtendSxth;
+    case EXARMO_AARCH64_MOD_SXTW: return kExtendSxtw;
+    case EXARMO_AARCH64_MOD_SXTX: return kExtendSxtx;
+    default: return kExtendNone;
+  }
+}
+
+static int Shift64(bool present, int kind, int amount) {
+  if (!present) return kShiftNone;
+  if (amount > 0 && Extend64(present, kind) != kExtendNone) return kShiftLsl;
+  switch (kind) {
+    case EXARMO_AARCH64_MOD_LSL: return kShiftLsl;
+    case EXARMO_AARCH64_MOD_LSR: return kShiftLsr;
+    case EXARMO_AARCH64_MOD_ASR: return kShiftAsr;
+    case EXARMO_AARCH64_MOD_ROR: return kShiftRor;
+    case EXARMO_AARCH64_MOD_MSL: return kShiftMsl;
+    default: return kShiftNone;
+  }
+}
+
+static int Width64(int reg_class) {
+  switch (reg_class) {
+    case EXARMO_AARCH64_REG_W:
+    case EXARMO_AARCH64_REG_W_SP:
+    case EXARMO_AARCH64_REG_S: return 4;
+    case EXARMO_AARCH64_REG_X:
+    case EXARMO_AARCH64_REG_X_SP:
+    case EXARMO_AARCH64_REG_D: return 8;
+    case EXARMO_AARCH64_REG_B: return 1;
+    case EXARMO_AARCH64_REG_H: return 2;
+    case EXARMO_AARCH64_REG_Q:
+    case EXARMO_AARCH64_REG_V: return 16;
+    default: return 0;
+  }
+}
+
+static int64_t ShiftAmount(bool present, int amount) {
+  return present && amount != -1 ? amount : 0;
+}
+
+static void Operand64(const exarmo_aarch64_operand* op, uint64_t address,
+                      Operand* o) {
+  memset(o, 0, sizeof(*o));
+  o->scale = 1;
+  o->kind = kKindOther;
+  switch (op->kind) {
+    case EXARMO_AARCH64_OPERAND_REG: {
+      const exarmo_aarch64_reg_operand* v = &op->reg;
+      if (v->modifier.present && v->modifier.kind == EXARMO_AARCH64_MOD_MUL)
+        return;
+      o->kind = kKindRegister;
+      o->reg = ExarmoRegister(kArchArm64, v->reg.class_, v->reg.num);
+      o->size = Width64(v->reg.class_);
+      o->shift =
+          Shift64(v->modifier.present, v->modifier.kind, v->modifier.amount);
+      o->shift_value = ShiftAmount(v->modifier.present, v->modifier.amount);
+      o->extend = Extend64(v->modifier.present, v->modifier.kind);
+      o->zeroing = v->predication == 0x7a;
+      o->element_bits = v->arrangement.element;
+      o->lanes = v->arrangement.lanes;
+      return;
+    }
+    case EXARMO_AARCH64_OPERAND_IMM: {
+      const exarmo_aarch64_modifier* m = &op->imm.modifier;
+      if (m->present && m->kind == EXARMO_AARCH64_MOD_MUL) return;
+      o->kind = kKindImmediate;
+      o->immediate = op->imm.value;
+      o->shift = Shift64(m->present, m->kind, m->amount);
+      o->shift_value = ShiftAmount(m->present, m->amount);
+      o->extend = Extend64(m->present, m->kind);
+      return;
+    }
+    case EXARMO_AARCH64_OPERAND_LABEL: {
+      const exarmo_aarch64_label* l = &op->label;
+      o->kind = kKindImmediate;
+      o->immediate =
+          (int64_t)((address + l->pc_ahead) & ~((uint64_t)l->pc_align - 1)) +
+          l->offset;
+      return;
+    }
+    case EXARMO_AARCH64_OPERAND_MEM: {
+      const exarmo_aarch64_mem* m = &op->mem;
+      const exarmo_aarch64_offset* off = &m->offset;
+      if (off->mul_vl ||
+          (off->modifier.present && off->modifier.kind == EXARMO_AARCH64_MOD_MUL))
+        return;
+      const bool has_index = off->kind == EXARMO_AARCH64_OFFSET_REG ||
+                             off->kind == EXARMO_AARCH64_OFFSET_VECTOR;
+      o->kind = kKindMemory;
+      o->base = ExarmoRegister(kArchArm64, m->base.class_, m->base.num);
+      o->index =
+          has_index ? ExarmoRegister(kArchArm64, off->reg.class_, off->reg.num)
+                    : 0;
+      o->displacement = off->kind == EXARMO_AARCH64_OFFSET_IMM ? off->imm : 0;
+      o->shift = Shift64(off->modifier.present, off->modifier.kind,
+                         off->modifier.amount);
+      o->shift_value =
+          ShiftAmount(off->modifier.present, off->modifier.amount);
+      o->extend = Extend64(off->modifier.present, off->modifier.kind);
+      o->element_bits = off->arrangement.element;
+      o->lanes = off->arrangement.lanes;
+      return;
+    }
+    default: return;
+  }
+}
+
+static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
+                           uint64_t address, int32_t limit, uint32_t stop,
+                           disassembler_batch* batch) {
+  (void)c;
+  exarmo_aarch64_instruction ins;
+  exarmo_aarch64_operand ops[EXARMO_AARCH64_MAX_OPERANDS];
+  int64_t at = 0;
+  while (at < length && HasRoom(batch, limit, EXARMO_AARCH64_MAX_OPERANDS, 0)) {
+    const uint64_t pc = address + (uint64_t)at;
+    const exarmo_aarch64_status status =
+        exarmo_aarch64_decode_bytes(bytes + at, (size_t)(length - at), &ins);
+    if (status != EXARMO_AARCH64_STATUS_OK) {
+      const int64_t remaining = length - at;
+      const uint32_t size = remaining < 4 ? (uint32_t)remaining : 4;
+      InvalidExarmo(batch, pc, size, status);
+      at += size;
+      if (Stops(stop, kFlowNone, false)) break;
+      continue;
+    }
+    const uint8_t size = exarmo_aarch64_instruction_length(&ins);
+    if (size < 1 || size > length - at) return DISASSEMBLER_STATUS_FAILED;
+    Record r;
+    InitRecord(&r, batch, pc);
+    r.size = size;
+    const int encoding = exarmo_aarch64_instruction_encoding(&ins);
+    r.id = encoding;
+    r.mnemonic = exarmo_aarch64_instruction_mnemonic(&ins);
+    r.canonical = exarmo_aarch64_encoding_mnemonic(encoding);
+    if (!exarmo_aarch64_instruction_unpredictable(&ins)) r.flags |= kFlagValid;
+    r.flags |= kFlagWritesFlagsKnown;
+    if (exarmo_aarch64_instruction_flags(&ins).writes != 0)
+      r.flags |= kFlagWritesFlags;
+    const exarmo_aarch64_branch branch =
+        exarmo_aarch64_instruction_branch(&ins, pc);
+    r.flow = ExarmoFlow64(branch.kind);
+    if (branch.conditional) r.flags |= kFlagConditional;
+    const size_t count = exarmo_aarch64_instruction_operands(
+        &ins, ops, EXARMO_AARCH64_MAX_OPERANDS);
+    if (count > EXARMO_AARCH64_MAX_OPERANDS) return DISASSEMBLER_STATUS_FAILED;
+    bool has_condition = false;
+    for (size_t i = 0; i < count; i++) {
+      const exarmo_aarch64_operand* op = &ops[i];
+      if (!has_condition && op->kind == EXARMO_AARCH64_OPERAND_COND) {
+        has_condition = true;
+        r.condition = op->cond < 14 ? op->cond + 1 : 0;
+      }
+      if (op->kind == EXARMO_AARCH64_OPERAND_MEM) {
+        if (op->mem.writeback != EXARMO_AARCH64_WRITEBACK_NONE)
+          r.flags |= kFlagWriteback;
+        if (op->mem.writeback == EXARMO_AARCH64_WRITEBACK_POST)
+          r.flags |= kFlagPostIndex;
+      }
+      Operand o;
+      Operand64(op, pc, &o);
+      WriteOperand(batch, &o);
+      r.operand_count++;
+    }
+    WriteRecord(batch, &r);
+    at += size;
+    if (Stops(stop, r.flow, (r.flags & kFlagValid) != 0)) break;
+  }
+  batch->consumed = at;
+  return DISASSEMBLER_STATUS_OK;
+}
+
+#endif
+
+#if defined(DISASSEMBLER_EXARMO_ARM)
+
+static int ExarmoFlow32(int kind) {
+  switch (kind) {
+    case EXARMO_AARCH32_BRANCH_DIRECT:
+    case EXARMO_AARCH32_BRANCH_INDIRECT: return kFlowJump;
+    case EXARMO_AARCH32_BRANCH_DIRECT_CALL:
+    case EXARMO_AARCH32_BRANCH_INDIRECT_CALL: return kFlowCall;
+    case EXARMO_AARCH32_BRANCH_RETURN:
+    case EXARMO_AARCH32_BRANCH_EXCEPTION_RETURN: return kFlowReturn;
+    case EXARMO_AARCH32_BRANCH_SYSTEM_CALL:
+    case EXARMO_AARCH32_BRANCH_EXCEPTION:
+    case EXARMO_AARCH32_BRANCH_HALT: return kFlowInterrupt;
+    default: return kFlowNone;
+  }
+}
+
+static int Shift32(bool present, int kind) {
+  if (!present) return kShiftNone;
+  switch (kind) {
+    case EXARMO_AARCH32_MOD_LSL: return kShiftLsl;
+    case EXARMO_AARCH32_MOD_LSR: return kShiftLsr;
+    case EXARMO_AARCH32_MOD_ASR: return kShiftAsr;
+    case EXARMO_AARCH32_MOD_ROR: return kShiftRor;
+    default: return kShiftNone;
+  }
+}
+
+static int Width32(int reg_class) {
+  switch (reg_class) {
+    case EXARMO_AARCH32_REG_CORE:
+    case EXARMO_AARCH32_REG_S: return 4;
+    case EXARMO_AARCH32_REG_D: return 8;
+    case EXARMO_AARCH32_REG_Q: return 16;
+    default: return 0;
+  }
+}
+
+static int64_t ShiftAmount32(bool present, int amount) {
+  return present && amount != -1 ? amount : 0;
+}
+
+static void Operand32(const exarmo_aarch32_operand* op, uint64_t address,
+                      Operand* o) {
+  memset(o, 0, sizeof(*o));
+  o->scale = 1;
+  o->kind = kKindOther;
+  switch (op->kind) {
+    case EXARMO_AARCH32_OPERAND_REG: {
+      const exarmo_aarch32_reg_operand* v = &op->reg;
+      if (v->modifier.has_by ||
+          (v->modifier.present && v->modifier.kind == EXARMO_AARCH32_MOD_RRX))
+        return;
+      o->kind = kKindRegister;
+      o->reg = ExarmoRegister(kArchArm, v->reg.class_, v->reg.num);
+      o->size = Width32(v->reg.class_);
+      o->shift = Shift32(v->modifier.present, v->modifier.kind);
+      o->shift_value = ShiftAmount32(v->modifier.present, v->modifier.amount);
+      return;
+    }
+    case EXARMO_AARCH32_OPERAND_IMM: {
+      const exarmo_aarch32_modifier* m = &op->imm.modifier;
+      o->kind = kKindImmediate;
+      o->immediate = op->imm.value;
+      o->shift = Shift32(m->present, m->kind);
+      o->shift_value = ShiftAmount32(m->present, m->amount);
+      return;
+    }
+    case EXARMO_AARCH32_OPERAND_LABEL: {
+      const exarmo_aarch32_label* l = &op->label;
+      o->kind = kKindImmediate;
+      o->immediate =
+          ((int64_t)((address + l->pc_ahead) & ~((uint64_t)l->pc_align - 1)) +
+           l->offset) &
+          0xffffffff;
+      return;
+    }
+    case EXARMO_AARCH32_OPERAND_MEM: {
+      const exarmo_aarch32_mem* m = &op->mem;
+      const exarmo_aarch32_offset* off = &m->offset;
+      if (off->modifier.has_by ||
+          (off->modifier.present && off->modifier.kind == EXARMO_AARCH32_MOD_RRX))
+        return;
+      o->kind = kKindMemory;
+      o->base = ExarmoRegister(kArchArm, m->base.class_, m->base.num);
+      o->index = off->kind == EXARMO_AARCH32_OFFSET_REG
+                     ? ExarmoRegister(kArchArm, off->reg.class_, off->reg.num)
+                     : 0;
+      o->scale = off->subtract ? -1 : 1;
+      o->displacement = off->kind == EXARMO_AARCH32_OFFSET_IMM ? off->imm : 0;
+      o->shift = Shift32(off->modifier.present, off->modifier.kind);
+      o->shift_value =
+          ShiftAmount32(off->modifier.present, off->modifier.amount);
+      return;
+    }
+    default: return;
+  }
+}
+
+static int32_t DecodeArm32(Context* c, const uint8_t* bytes, int64_t length,
+                           uint64_t address, int32_t limit, uint32_t stop,
+                           bool resume, disassembler_batch* batch) {
+  const bool thumb = c->architecture == kArchThumb;
+  if (!resume) {
+    c->it.kind = EXARMO_AARCH32_IT_OUTSIDE;
+    c->it.cond = 0;
+    c->it.mask = 0;
+  }
+  exarmo_aarch32_instruction ins;
+  exarmo_aarch32_operand ops[EXARMO_AARCH32_MAX_OPERANDS];
+  int64_t at = 0;
+  while (at < length && HasRoom(batch, limit, EXARMO_AARCH32_MAX_OPERANDS, 0)) {
+    const uint64_t pc = address + (uint64_t)at;
+    const exarmo_aarch32_it_state before = c->it;
+    const exarmo_aarch32_status status =
+        thumb ? exarmo_aarch32_decode_t32_bytes(
+                    bytes + at, (size_t)(length - at), c->it, &ins)
+              : exarmo_aarch32_decode_a32_bytes(bytes + at,
+                                                (size_t)(length - at), &ins);
+    if (status != EXARMO_AARCH32_STATUS_OK) {
+      const int unit = thumb ? 2 : 4;
+      const int64_t remaining = length - at;
+      const uint32_t size =
+          remaining < unit ? (uint32_t)remaining : (uint32_t)unit;
+      InvalidExarmo(batch, pc, size, status);
+      c->it.kind = EXARMO_AARCH32_IT_OUTSIDE;
+      c->it.cond = 0;
+      c->it.mask = 0;
+      at += size;
+      if (Stops(stop, kFlowNone, false)) break;
+      continue;
+    }
+    const uint8_t size = exarmo_aarch32_instruction_length(&ins);
+    if (size < 1 || size > length - at) return DISASSEMBLER_STATUS_FAILED;
+    Record r;
+    InitRecord(&r, batch, pc);
+    r.size = size;
+    const int encoding = exarmo_aarch32_instruction_encoding(&ins);
+    r.id = encoding;
+    r.mnemonic = exarmo_aarch32_instruction_mnemonic(&ins);
+    r.canonical = exarmo_aarch32_encoding_mnemonic(encoding);
+    r.extra = (int64_t)before.kind | (int64_t)before.cond << 8 |
+              (int64_t)before.mask << 16;
+    if (!exarmo_aarch32_instruction_unpredictable(&ins)) r.flags |= kFlagValid;
+    r.flags |= kFlagWritesFlagsKnown;
+    if (exarmo_aarch32_instruction_flags(&ins).writes != 0)
+      r.flags |= kFlagWritesFlags;
+    const exarmo_aarch32_branch branch =
+        exarmo_aarch32_instruction_branch(&ins, pc);
+    r.flow = ExarmoFlow32(branch.kind);
+    const size_t count = exarmo_aarch32_instruction_operands(
+        &ins, ops, EXARMO_AARCH32_MAX_OPERANDS);
+    if (count > EXARMO_AARCH32_MAX_OPERANDS) return DISASSEMBLER_STATUS_FAILED;
+    bool has_condition = false;
+    for (size_t i = 0; i < count; i++) {
+      const exarmo_aarch32_operand* op = &ops[i];
+      if (!has_condition && op->kind == EXARMO_AARCH32_OPERAND_COND) {
+        has_condition = true;
+        r.condition = op->cond < 14 ? op->cond + 1 : 0;
+      }
+      if (op->kind == EXARMO_AARCH32_OPERAND_MEM) {
+        if (op->mem.writeback != EXARMO_AARCH32_WRITEBACK_NONE)
+          r.flags |= kFlagWriteback;
+        if (op->mem.writeback == EXARMO_AARCH32_WRITEBACK_POST)
+          r.flags |= kFlagPostIndex;
+      } else if (op->kind == EXARMO_AARCH32_OPERAND_REG && op->reg.writeback) {
+        r.flags |= kFlagWriteback;
+      }
+      Operand o;
+      Operand32(op, pc, &o);
+      WriteOperand(batch, &o);
+      r.operand_count++;
+    }
+    if (branch.conditional || r.condition != 0) r.flags |= kFlagConditional;
+    WriteRecord(batch, &r);
+    at += size;
+    if (thumb) c->it = exarmo_aarch32_it_state_after(c->it, &ins);
+    if (Stops(stop, r.flow, (r.flags & kFlagValid) != 0)) break;
+  }
+  batch->consumed = at;
+  return DISASSEMBLER_STATUS_OK;
+}
+
+#endif
+
+#if defined(DISASSEMBLER_CAPSTONE)
+
+static int RegisterSize(const char* name) {
+  if (name == NULL) return 0;
+  if (strcmp(name, "sp") == 0 || strcmp(name, "xzr") == 0 || name[0] == 'x')
+    return 8;
+  if (strcmp(name, "wsp") == 0 || strcmp(name, "wzr") == 0 || name[0] == 'w')
+    return 4;
+  if (name[0] == 'q' || name[0] == 'v') return 16;
+  if (name[0] == 'd') return 8;
+  if (name[0] == 's') return 4;
+  if (name[0] == 'h') return 2;
+  if (name[0] == 'b') return 1;
+  if (name[0] == 'r' || strcmp(name, "lr") == 0 || strcmp(name, "pc") == 0)
+    return 4;
+  return 0;
+}
+
+static bool NameIs(const char* name, const char* expected) {
+  if (name == NULL) return false;
+  for (; *name && *expected; name++, expected++) {
+    if (tolower((unsigned char)*name) != *expected) return false;
+  }
+  return *name == 0 && *expected == 0;
+}
+
+static int64_t InternMnemonic(Context* c, const char* text) {
+  char lower[32];
+  int n = 0;
+  for (; n < 31 && text[n]; n++) lower[n] = (char)tolower((unsigned char)text[n]);
+  lower[n] = 0;
+  for (int32_t i = 0; i < c->mnemonic_count; i++) {
+    if (strcmp(c->mnemonics[i], lower) == 0) return i;
+  }
+  if (c->mnemonic_count == c->mnemonic_capacity) {
+    const int32_t capacity = c->mnemonic_capacity ? c->mnemonic_capacity * 2 : 256;
+    char(*grown)[32] = realloc(c->mnemonics, (size_t)capacity * 32);
+    if (grown == NULL) return -1;
+    c->mnemonics = grown;
+    c->mnemonic_capacity = capacity;
+  }
+  memcpy(c->mnemonics[c->mnemonic_count], lower, 32);
+  return c->mnemonic_count++;
+}
+
+static int CapstoneFlow(const cs_detail* detail) {
+  for (int i = 0; i < detail->groups_count; i++) {
+    switch (detail->groups[i]) {
+      case CS_GRP_CALL: return kFlowCall;
+      case CS_GRP_RET:
+      case CS_GRP_IRET: return kFlowReturn;
+      case CS_GRP_JUMP: return kFlowJump;
+      case CS_GRP_INT: return kFlowInterrupt;
+      default: break;
+    }
+  }
+  return kFlowNone;
+}
+
+static int Aarch64Shift(int value) {
+  switch (value) {
+    case AARCH64_SFT_LSL: return kShiftLsl;
+    case AARCH64_SFT_LSR: return kShiftLsr;
+    case AARCH64_SFT_ASR: return kShiftAsr;
+    case AARCH64_SFT_ROR: return kShiftRor;
+    case AARCH64_SFT_MSL: return kShiftMsl;
+    default: return kShiftNone;
+  }
+}
+
+static int Aarch64Extend(int value) {
+  switch (value) {
+    case AARCH64_EXT_UXTB: return kExtendUxtb;
+    case AARCH64_EXT_UXTH: return kExtendUxth;
+    case AARCH64_EXT_UXTW: return kExtendUxtw;
+    case AARCH64_EXT_UXTX: return kExtendUxtx;
+    case AARCH64_EXT_SXTB: return kExtendSxtb;
+    case AARCH64_EXT_SXTH: return kExtendSxth;
+    case AARCH64_EXT_SXTW: return kExtendSxtw;
+    case AARCH64_EXT_SXTX: return kExtendSxtx;
+    default: return kExtendNone;
+  }
+}
+
+static int ArmShift(int value) {
+  switch (value) {
+    case ARM_SFT_LSL: return kShiftLsl;
+    case ARM_SFT_LSR: return kShiftLsr;
+    case ARM_SFT_ASR: return kShiftAsr;
+    case ARM_SFT_ROR: return kShiftRor;
+    default: return kShiftNone;
+  }
+}
+
+static int CapstoneOperands(Context* c, const cs_detail* detail,
+                            disassembler_batch* batch) {
+  int count = 0;
+  Operand o;
+  switch (c->architecture) {
+    case kArchX86:
+    case kArchX64:
+      for (int i = 0; i < detail->x86.op_count; i++) {
+        const cs_x86_op* op = &detail->x86.operands[i];
+        memset(&o, 0, sizeof(o));
+        o.scale = 1;
+        switch (op->type) {
+          case X86_OP_REG: o.kind = kKindRegister; break;
+          case X86_OP_IMM: o.kind = kKindImmediate; break;
+          case X86_OP_MEM: o.kind = kKindMemory; break;
+          default: o.kind = kKindOther; break;
+        }
+        if (o.kind == kKindRegister) o.reg = op->reg;
+        if (o.kind == kKindImmediate) o.immediate = op->imm;
+        o.size = op->size;
+        o.has_access = true;
+        o.access = op->access;
+        o.zeroing = op->avx_zero_opmask;
+        o.broadcast = op->avx_bcast > 0 ? 1 << op->avx_bcast : 0;
+        if (o.kind == kKindMemory) {
+          o.base = op->mem.base;
+          o.index = op->mem.index;
+          o.segment = op->mem.segment;
+          o.scale = op->mem.scale;
+          o.displacement = op->mem.disp;
+        }
+        WriteOperand(batch, &o);
+        count++;
+      }
+      break;
+    case kArchArm64:
+      for (int i = 0; i < detail->aarch64.op_count; i++) {
+        const cs_aarch64_op* op = &detail->aarch64.operands[i];
+        memset(&o, 0, sizeof(o));
+        o.scale = 1;
+        switch (op->type) {
+          case AARCH64_OP_REG:
+          case AARCH64_OP_MEM_REG: o.kind = kKindRegister; break;
+          case AARCH64_OP_IMM:
+          case AARCH64_OP_MEM_IMM: o.kind = kKindImmediate; break;
+          case AARCH64_OP_MEM: o.kind = kKindMemory; break;
+          default: o.kind = kKindOther; break;
+        }
+        if (o.kind == kKindRegister) o.reg = op->reg;
+        if (o.kind == kKindImmediate) o.immediate = op->imm;
+        o.size = RegisterSize(o.reg ? cs_reg_name(c->capstone, (unsigned)o.reg)
+                                    : NULL);
+        o.has_access = true;
+        o.access = op->access;
+        o.shift = Aarch64Shift(op->shift.type);
+        o.shift_value = op->shift.value;
+        o.extend = Aarch64Extend(op->ext);
+        if (o.kind == kKindMemory) {
+          o.base = op->mem.base;
+          o.index = op->mem.index;
+          o.displacement = op->mem.disp;
+          o.absolute = op->mem.base == 0 && op->mem.index == 0;
+        }
+        WriteOperand(batch, &o);
+        count++;
+      }
+      break;
+    default:
+      for (int i = 0; i < detail->arm.op_count; i++) {
+        const cs_arm_op* op = &detail->arm.operands[i];
+        memset(&o, 0, sizeof(o));
+        o.scale = 1;
+        switch (op->type) {
+          case ARM_OP_REG: o.kind = kKindRegister; break;
+          case ARM_OP_IMM: o.kind = kKindImmediate; break;
+          case ARM_OP_MEM: o.kind = kKindMemory; break;
+          default: o.kind = kKindOther; break;
+        }
+        if (o.kind == kKindRegister) {
+          o.reg = op->reg;
+          const char* name = cs_reg_name(c->capstone, (unsigned)op->reg);
+          o.size = name != NULL && strcmp(name, "sp") == 0 ? 4
+                                                           : RegisterSize(name);
+        }
+        if (o.kind == kKindImmediate) o.immediate = op->imm;
+        o.has_access = true;
+        o.access = op->access;
+        o.shift = ArmShift(op->shift.type);
+        o.shift_value = op->shift.value;
+        if (o.kind == kKindMemory) {
+          o.base = op->mem.base;
+          o.index = op->mem.index;
+          o.scale = op->mem.scale;
+          o.displacement = op->mem.disp;
+        }
+        WriteOperand(batch, &o);
+        count++;
+      }
+      break;
+  }
+  return count;
+}
+
+static int32_t DecodeCapstone(Context* c, const uint8_t* bytes, int64_t length,
+                              uint64_t address, int32_t limit, uint32_t stop,
+                              disassembler_batch* batch) {
+  const uint8_t* cursor = bytes;
+  size_t remaining = (size_t)length;
+  uint64_t position = address;
+  while (remaining > 0 && HasRoom(batch, limit, 48, 128)) {
+    const uint64_t start = position;
+    const size_t before = remaining;
+    const bool decoded =
+        cs_disasm_iter(c->capstone, &cursor, &remaining, &position, c->insn);
+    Record r;
+    if (!decoded) {
+      const cs_err error = cs_errno(c->capstone);
+      if (error != CS_ERR_OK) return DISASSEMBLER_STATUS_FAILED;
+      InitRecord(&r, batch, start);
+      r.size = (uint32_t)before;
+      WriteRecord(batch, &r);
+      remaining = 0;
+      break;
+    }
+    const cs_insn* ins = c->insn;
+    InitRecord(&r, batch, ins->address);
+    r.size = ins->size;
+    r.id = ins->id;
+    r.mnemonic = InternMnemonic(c, ins->mnemonic);
+    r.canonical = ins->id;
+    const cs_detail* detail = ins->id != 0 ? ins->detail : NULL;
+    if (ins->id != 0) r.flags |= kFlagValid;
+    if (detail != NULL) {
+      r.flow = CapstoneFlow(detail);
+      r.operand_count = CapstoneOperands(c, detail, batch);
+      cs_regs read;
+      cs_regs written;
+      uint8_t read_count = 0;
+      uint8_t written_count = 0;
+      const cs_err access = cs_regs_access(c->capstone, ins, read, &read_count,
+                                           written, &written_count);
+      if (access == CS_ERR_OK) {
+        r.flags |= kFlagRegisterAccess | kFlagWritesFlagsKnown;
+        for (int i = 0; i < read_count; i++)
+          batch->registers[batch->register_count + r.read_count++] = read[i];
+        for (int i = 0; i < written_count; i++) {
+          batch->registers[batch->register_count + r.read_count +
+                           r.written_count++] = written[i];
+          const char* name = cs_reg_name(c->capstone, written[i]);
+          if (NameIs(name, "eflags") || NameIs(name, "rflags") ||
+              NameIs(name, "nzcv") || NameIs(name, "cpsr"))
+            r.flags |= kFlagWritesFlags;
+        }
+        batch->register_count += r.read_count + r.written_count;
+      } else if (access != CS_ERR_ARCH) {
+        return DISASSEMBLER_STATUS_FAILED;
+      }
+      const char* name = cs_insn_name(c->capstone, ins->id);
+      if (c->architecture == kArchArm64) {
+        r.condition = ArmConditionCode(detail->aarch64.cc);
+        if (detail->aarch64.post_index) r.flags |= kFlagPostIndex;
+      } else if (c->architecture == kArchArm ||
+                 c->architecture == kArchThumb) {
+        r.condition = ArmConditionCode(detail->arm.cc);
+        if (detail->arm.post_index) r.flags |= kFlagPostIndex;
+      } else {
+        if (r.flow == kFlowJump && !NameIs(name, "jmp"))
+          r.condition = kConditionMnemonic;
+        r.immediate_size = detail->x86.encoding.imm_size;
+        for (int i = 0; i < detail->groups_count; i++) {
+          if (detail->groups[i] == X86_GRP_AVX ||
+              detail->groups[i] == X86_GRP_AVX2 ||
+              detail->groups[i] == X86_GRP_AVX512)
+            r.flags |= kFlagVector;
+        }
+      }
+      if (r.condition != 0 || NameIs(name, "cbz") || NameIs(name, "cbnz") ||
+          NameIs(name, "tbz") || NameIs(name, "tbnz"))
+        r.flags |= kFlagConditional;
+      if (detail->writeback) r.flags |= kFlagWriteback;
+    }
+    WriteRecord(batch, &r);
+    if (Stops(stop, r.flow, (r.flags & kFlagValid) != 0)) break;
+  }
+  batch->consumed = length - (int64_t)remaining;
+  return DISASSEMBLER_STATUS_OK;
+}
+
+#endif
+
+void* disassembler_open(int32_t backend, int32_t architecture) {
+  Context* c = calloc(1, sizeof(Context));
+  if (c == NULL) return NULL;
+  c->backend = backend;
+  c->architecture = architecture;
+  switch (backend) {
+#if defined(DISASSEMBLER_ZYDIS)
+    case kBackendZydis:
+      if (architecture != kArchX86 && architecture != kArchX64) break;
+      if (!ZYAN_SUCCESS(ZydisDecoderInit(
+              &c->zydis,
+              architecture == kArchX64 ? ZYDIS_MACHINE_MODE_LONG_64
+                                       : ZYDIS_MACHINE_MODE_LEGACY_32,
+              architecture == kArchX64 ? ZYDIS_STACK_WIDTH_64
+                                       : ZYDIS_STACK_WIDTH_32)))
+        break;
+      return c;
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM) || defined(DISASSEMBLER_EXARMO_AARCH64)
+    case kBackendExarmo:
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+      if (architecture == kArchArm64) return c;
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM)
+      if (architecture == kArchArm || architecture == kArchThumb) return c;
+#endif
+      break;
+#endif
+#if defined(DISASSEMBLER_CAPSTONE)
+    case kBackendCapstone: {
+      cs_arch arch;
+      int mode = 0;
+      switch (architecture) {
+        case kArchX86: arch = CS_ARCH_X86; mode = CS_MODE_32; break;
+        case kArchX64: arch = CS_ARCH_X86; mode = CS_MODE_64; break;
+        case kArchArm: arch = CS_ARCH_ARM; break;
+        case kArchThumb: arch = CS_ARCH_ARM; mode = CS_MODE_THUMB; break;
+        default: arch = CS_ARCH_AARCH64; break;
+      }
+      if (cs_open(arch, (cs_mode)mode, &c->capstone) != CS_ERR_OK) break;
+      if (cs_option(c->capstone, CS_OPT_DETAIL,
+                    CS_OPT_ON | CS_OPT_DETAIL_REAL) != CS_ERR_OK ||
+          cs_option(c->capstone, CS_OPT_SKIPDATA, CS_OPT_ON) != CS_ERR_OK) {
+        cs_close(&c->capstone);
+        break;
+      }
+      c->insn = cs_malloc(c->capstone);
+      if (c->insn == NULL) {
+        cs_close(&c->capstone);
+        break;
+      }
+      return c;
+    }
+#endif
+    default: break;
+  }
+  free(c);
+  return NULL;
+}
+
+int32_t disassembler_decode(void* context, const uint8_t* bytes,
+                            int64_t length, uint64_t address, int32_t limit,
+                            uint32_t stop, int32_t resume,
+                            disassembler_batch* batch) {
+  Context* c = context;
+  batch->count = 0;
+  batch->operand_count = 0;
+  batch->register_count = 0;
+  batch->consumed = 0;
+  if (limit <= 0 || limit > batch->instruction_capacity)
+    limit = batch->instruction_capacity;
+  if (length <= 0) return DISASSEMBLER_STATUS_OK;
+  int32_t status = DISASSEMBLER_STATUS_UNSUPPORTED;
+  switch (c->backend) {
+#if defined(DISASSEMBLER_ZYDIS)
+    case kBackendZydis:
+      status = DecodeZydis(c, bytes, length, address, limit, stop, batch);
+      break;
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM) || defined(DISASSEMBLER_EXARMO_AARCH64)
+    case kBackendExarmo:
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+      if (c->architecture == kArchArm64) {
+        status = DecodeArm64(c, bytes, length, address, limit, stop, batch);
+        break;
+      }
+#endif
+#if defined(DISASSEMBLER_EXARMO_ARM)
+      status = DecodeArm32(c, bytes, length, address, limit, stop, resume != 0,
+                           batch);
+#endif
+      break;
+#endif
+#if defined(DISASSEMBLER_CAPSTONE)
+    case kBackendCapstone:
+      status = DecodeCapstone(c, bytes, length, address, limit, stop, batch);
+      break;
+#endif
+    default: break;
+  }
+  (void)resume;
+  if (status == DISASSEMBLER_STATUS_OK && batch->count == 0)
+    return DISASSEMBLER_STATUS_CAPACITY;
+  return status;
+}
+
+const char* disassembler_mnemonic(void* context, int64_t key) {
+  Context* c = context;
+#if defined(DISASSEMBLER_CAPSTONE)
+  if (c->backend == kBackendCapstone && key >= 0 && key < c->mnemonic_count)
+    return c->mnemonics[key];
+#endif
+  (void)c;
+  (void)key;
+  return NULL;
+}
+
+void disassembler_close(void* context) {
+  Context* c = context;
+  if (c == NULL) return;
+#if defined(DISASSEMBLER_CAPSTONE)
+  if (c->backend == kBackendCapstone) {
+    cs_free(c->insn, 1);
+    cs_close(&c->capstone);
+    free(c->mnemonics);
+  }
+#endif
+  free(c);
+}

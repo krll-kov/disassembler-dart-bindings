@@ -193,18 +193,20 @@ void main() {
     final Exarmo raw = Exarmo(.aarch64);
     addTearDown(raw.close);
     expect(raw.decode(bytes).length, 1);
-    common.InstructionView? invalid;
     final common.DisassemblerBuffer buffer = common.DisassemblerBuffer(bytes);
     addTearDown(buffer.close);
     final common.DisassemblerReader reader = decoder.reader(buffer);
     addTearDown(reader.close);
-    reader.visit((common.InstructionView value) {
-      if (!value.valid) invalid = value;
-      return true;
-    });
-    expect(() => invalid!.bytes, throwsStateError);
-    expect(() => invalid!.valid, throwsStateError);
-    expect(() => invalid!.details, throwsStateError);
+    final common.DecodedBatch batch = common.DecodedBatch();
+    reader.decode(batch);
+    final int invalid = [
+      for (int i = 0; i < batch.length; i++) i,
+    ].firstWhere((int i) => !batch.valid(i));
+    expect(batch.bytes(invalid), bytes.sublist(4, 8));
+    batch.close();
+    expect(() => batch.bytes(invalid), throwsRangeError);
+    expect(() => batch.valid(invalid), throwsRangeError);
+    expect(() => batch.instruction(invalid), throwsRangeError);
   });
 
   test('Invalid Thumb prefix cannot prevent 2 byte instruction progress', () {

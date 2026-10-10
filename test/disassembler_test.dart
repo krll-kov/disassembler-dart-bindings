@@ -45,29 +45,30 @@ void main() {
       final Disassembler decoder = Disassembler(architecture, backend: backend);
       final DisassemblerBuffer buffer = DisassemblerBuffer(bytes);
       final DisassemblerReader reader = decoder.reader(buffer);
+      final DecodedBatch batch = DecodedBatch();
       addTearDown(() {
+        batch.close();
         reader.close();
         buffer.close();
         decoder.close();
       });
-      InstructionView? saved;
-      reader.visit((instruction) {
-        saved = instruction;
+      reader.visit(batch, (decoded) {
         expect(() => buffer.close(), throwsStateError);
         expect(() => reader.close(), throwsStateError);
         expect(() => decoder.close(), throwsStateError);
         return false;
       });
-      expect(() => saved!.operands, throwsStateError);
-      expect(() => saved!.copy(), throwsStateError);
       int count = 0;
-      reader.visit((instruction) {
-        count++;
+      reader.visit(batch, (decoded) {
+        count += decoded.length;
         return true;
       });
       expect(count, 2);
+      batch.close();
+      expect(() => batch.operand(0, 0), throwsRangeError);
+      expect(() => batch.instruction(0), throwsRangeError);
       reader.close();
-      expect(() => reader.visit((_) => true), throwsStateError);
+      expect(() => reader.visit(batch, (_) => true), throwsStateError);
       decoder.close();
       expect(() => decoder.decode(bytes), throwsStateError);
       expect(() => decoder.reader(buffer), throwsStateError);
@@ -155,29 +156,30 @@ void main() {
     );
     final buffer = DisassemblerBuffer(Uint8List.fromList([0x48, 0x01, 0xd8]));
     final reader = decoder.reader(buffer);
-    InstructionView? saved;
+    final batch = DecodedBatch();
     expect(decoder.registerName(1), isNotEmpty);
-    reader.visit((instruction) {
-      saved = instruction;
-      expect(instruction.mnemonic, 'add');
-      expect(instruction.canonicalMnemonic, 'add');
-      expect(instruction.writesFlags, isTrue);
-      expect(instruction.registerAccess, isNotNull);
-      expect(instruction.bytes, [0x48, 0x01, 0xd8]);
-      expect(instruction.mnemonic, 'add');
-      expect(instruction.writesFlags, isTrue);
+    reader.visit(batch, (decoded) {
+      expect(decoded.mnemonic(0), 'add');
+      expect(decoded.canonicalMnemonic(0), 'add');
+      expect(decoded.writesFlags(0), isTrue);
+      expect(decoded.hasRegisterAccess(0), isTrue);
+      expect(decoded.bytes(0), [0x48, 0x01, 0xd8]);
       return true;
     });
-    expect(() => saved!.mnemonic, throwsStateError);
-    expect(() => saved!.canonicalMnemonic, throwsStateError);
-    expect(() => saved!.writesFlags, throwsStateError);
-    expect(() => saved!.registerAccess, throwsStateError);
-    expect(() => saved!.bytes, throwsStateError);
+    final Instruction kept = batch.instruction(0);
+    batch.close();
+    expect(() => batch.mnemonic(0), throwsRangeError);
+    expect(() => batch.canonicalMnemonic(0), throwsRangeError);
+    expect(() => batch.writesFlags(0), throwsRangeError);
+    expect(() => batch.registersWritten(0), throwsRangeError);
+    expect(() => batch.bytes(0), throwsRangeError);
     reader.close();
     buffer.close();
     decoder.close();
     expect(() => decoder.registerName(1), throwsStateError);
-    expect(() => saved!.registersWritten, throwsStateError);
+    expect(kept.mnemonic, 'add');
+    expect(kept.writesFlags, isTrue);
+    expect(kept.bytes, [0x48, 0x01, 0xd8]);
   });
 
   for (final DisassemblerBackend backend in [

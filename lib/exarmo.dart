@@ -560,6 +560,10 @@ final class Exarmo {
   String _string32(native.exarmo_aarch32_str value) =>
       utf8.decode(value.data.cast<Uint8>().asTypedList(value.length));
 
+  String mnemonicName(int mnemonic) => mode == .aarch64
+      ? _string64(native.exarmo_aarch64_mnemonic_name(mnemonic))
+      : _string32(native.exarmo_aarch32_mnemonic_name(mnemonic));
+
   void close() {
     if (_closed) return;
     if (_busy) throw StateError('Exarmo decode is already active');

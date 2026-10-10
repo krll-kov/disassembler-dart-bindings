@@ -1,10 +1,10 @@
 # Disassembler
 
-Decode machine instructions in Dart with Zydis, exarmo or Capstone. Choose the engines and architectures your application needs. Dart's build hooks compile them into one native library.
+Dart decoding of machine instructions with Zydis, exarmo or Capstone. The build hooks compile the engines and architectures you select into one native library.
 
 ## Installation
 
-Add the dependency and native build settings to your application's `pubspec.yaml`:
+Add the dependency and the build settings to your application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
@@ -24,21 +24,17 @@ hooks:
           features: [decoder]
 ```
 
-This example enables Zydis for x86/x64 and exarmo for ARM64. Every engine is disabled by default. Omit an engine to exclude it, or use `backends: {}` to disable all native builds. The package's own settings enable all engines for its tests and do not affect your application.
+This enables Zydis for x86 and x64 and exarmo for ARM64. Every engine is off by default: omit an engine to exclude it, or use `backends: {}` to build no native code. The settings in this package's own `pubspec.yaml` enable every engine for its tests and do not affect your application.
 
 ## Build settings
 
-Each entry in `backends` requires `architectures` and `features`:
+Each engine under `backends` takes 2 required lists, `architectures` and `features`. Unknown keys and empty lists stop the build with an error.
 
-| Engine | Architectures | Features |
-| --- | --- | --- |
-| `zydis` | `x86` | `decoder`, optional `encoder` and `formatter` |
-| `exarmo` | `arm`, `arm64` | `decoder` |
-| `capstone` | 23 architecture families listed below | `decoder` |
+`architectures` selects instruction families. `x86` covers x86 and x64, `arm` covers ARM32 and Thumb, and `arm64` is AArch64 for every engine. Zydis accepts `x86`, exarmo accepts `arm` and `arm64`, and Capstone accepts `arm`, `arm64`, `m68k`, `mips`, `ppc`, `sparc`, `systemz`, `xcore`, `x86`, `tms320c64x`, `m680x`, `evm`, `mos65xx`, `wasm`, `bpf`, `riscv`, `sh`, `tricore`, `alpha`, `hppa`, `loongarch`, `xtensa` and `arc`. Capstone's `x86` also decodes 16-bit code through its own API.
 
-Every backend has the same 2 required fields. `architectures` selects instruction families. `x86` includes x86 and x64, while `arm` includes ARM32 and Thumb. `arm64` means AArch64 for every engine. `features` selects native components, with `decoder` required. Zydis can also include `encoder` and `formatter`. Capstone and exarmo do not expose independently selectable encoder or formatter components.
+`features` must contain `decoder`. Zydis also accepts `encoder` and `formatter` for encoding and instruction text, and Capstone and exarmo accept only `decoder`.
 
-To use all 3 engines, put this complete configuration in your application's `pubspec.yaml`:
+All 3 engines together:
 
 ```yaml
 hooks:
@@ -56,11 +52,7 @@ hooks:
           features: [decoder]
 ```
 
-Capstone accepts `arm`, `arm64`, `m68k`, `mips`, `ppc`, `sparc`, `systemz`, `xcore`, `x86`, `tms320c64x`, `m680x`, `evm`, `mos65xx`, `wasm`, `bpf`, `riscv`, `sh`, `tricore`, `alpha`, `hppa`, `loongarch`, `xtensa` and `arc`. Its `x86` family also includes 16-bit decoding through the engine API.
-
-`decoder` is required for every engine. Use `features: [decoder, encoder, formatter]` for Zydis when you need encoding or formatted instruction text. Capstone and exarmo accept only `decoder`. Unknown settings and empty lists stop the build with an error. Any combination of engines produces one native library.
-
-Select an engine explicitly when creating `Disassembler`. An excluded engine or architecture throws `UnsupportedError`. The package does not switch to another engine automatically.
+`Disassembler` takes the engine explicitly. An engine or architecture left out of the build throws `UnsupportedError`, and the package never falls back to another engine.
 
 ## Decoding
 
@@ -89,64 +81,69 @@ void main() {
 }
 ```
 
-The common API supports `x86`, `x64`, `arm`, `thumb` and `arm64`. Each instruction has operands, branch information and register access when the engine provides it. Relative branch targets use absolute addresses. Register IDs differ between engines, so use `registerName` and `registerId` to work with them. Register access is `null` when unavailable, including exarmo's implicit register information.
+The common API decodes `x86`, `x64`, `arm`, `thumb` and `arm64`. An instruction has operands, control flow and, where the engine reports it, register access. Relative branch targets are absolute addresses. Register IDs differ between engines, so convert them with `registerName` and `registerId`. Register access is `null` where the engine has none, which includes every exarmo instruction.
 
-For `postIndex == true`, the memory access uses the base before its update. The update remains in the engine's operand representation: a memory displacement or a separate immediate operand.
+With `postIndex == true` the memory access uses the base before its update. The update stays where the engine puts it: in the memory displacement or in a separate immediate operand.
 
-`Instruction.details` contains the engine's full output as `ZydisInstructionDetails`, `ExarmoInstructionDetails` or `CapstoneInstructionDetails`. Zydis and Capstone also use those types for invalid input. exarmo returns `InvalidInstructionDetails` with its native error code.
+`Instruction.details` holds the engine's full output as `ZydisInstructionDetails`, `ExarmoInstructionDetails` or `CapstoneInstructionDetails`. Zydis and Capstone use the same types for invalid input, and exarmo returns `InvalidInstructionDetails` with its native status.
 
-Import `zydis.dart`, `exarmo.dart` or `capstone.dart` to use an engine's API directly, including Capstone's additional architectures. The generated C bindings are in `zydis_native.dart`, `exarmo_native.dart` and `native.dart`, respectively.
+Invalid input gives `valid == false` and decoding continues. A successful decode does not prove the bytes are code. Each engine's own API is in `zydis.dart`, `exarmo.dart` and `capstone.dart`, including Capstone's other architectures, with its own error handling. The generated C bindings are in `zydis_native.dart`, `exarmo_native.dart` and `native.dart`.
 
-Use `DisassemblerBuffer` and `decoder.reader(buffer)` to decode several ranges from the same bytes. `reader.visit` accepts `start`, `end` and `address`, and stops when its callback returns `false`. An `InstructionView` is valid only during that callback. Use `instruction.copy()` to keep it, and close the reader before closing its buffer. The instructions returned by `decode` remain valid after `decoder.close()`.
+## Batch decoding
 
-The common API returns `valid == false` for invalid input and continues decoding. Each engine's direct API has its own error handling. Successful decoding does not prove that the bytes are executable code.
+`decode` creates an object per instruction. For large inputs use `DisassemblerBuffer`, `decoder.reader(buffer)` and `DecodedBatch`: one native call writes instructions, operands and register lists into the batch's arrays, and you read fields by index, such as `batch.address(i)`, `batch.canonicalMnemonic(i)`, `batch.operandImmediate(i, k)` and `batch.registersWritten(i)`.
 
-Capstone Alpha11 supplies incomplete metadata for some instructions: `access = 0` and `avx_bcast = 0` for masked broadcast `VADDPS` bytes `62 f1 5c db 58 10`, and no groups for `VXORPS` bytes `62 f1 7c c9 57 c0`. The package preserves native values.
+```dart
+final buffer = DisassemblerBuffer(bytes);
+final reader = decoder.reader(buffer);
+final batch = DecodedBatch();
+try {
+  reader.visit(batch, (batch) {
+    for (int i = 0; i < batch.length; i++) {
+      print('${batch.address(i).toRadixString(16)} ${batch.mnemonic(i)}');
+    }
+    return true;
+  }, address: 0x1000);
+} finally {
+  batch.close();
+  reader.close();
+  buffer.close();
+}
+```
+
+`reader.decode(batch, start: ..., end: ..., address: ...)` fills the batch once and returns the instruction count, and `start + batch.consumed` is the next offset. `address` is the address of the byte at `start`. `reader.visit` repeats `decode` up to `end` and stops when the callback returns `false`. Both take `stopAfter`, a set of `ControlFlow` values, and `stopAfterInvalid`, and stop after the first instruction that matches, so a basic block costs no decoding after its branch. Thumb IT state is kept between `decode` calls only with `resume: true`, and `visit` passes it between its own batches.
+
+The next decode overwrites the batch, so copy an instruction with `batch.instruction(i)` to keep it. Close the reader before its buffer. Instructions from `decoder.decode` stay valid after `decoder.close()`.
+
+## Known engine gaps
+
+Capstone 6.0.0-Alpha11 reports `access = 0` and `avx_bcast = 0` for the masked broadcast `VADDPS` bytes `62 f1 5c db 58 10`, and no groups for the `VXORPS` bytes `62 f1 7c c9 57 c0`. The package passes these values through unchanged.
 
 ## Build requirements
 
-Use Dart 3.13 or later and a native compiler: Xcode Command Line Tools on macOS, Visual Studio C++ Build Tools on Windows, GCC or Clang on Linux, Android NDK for Android, or full Xcode for iOS. Normal Dart and Flutter commands run the build hooks. Generated bindings are included, so applications do not need ffigen or libclang.
+Dart 3.13 or later and a native compiler: Xcode Command Line Tools on macOS, Visual Studio with the "Desktop development with C++" workload and a Windows SDK on Windows, GCC or Clang on Linux, the Android NDK for Android, or full Xcode for iOS. Flutter for Windows already requires that Visual Studio workload, so on Windows only a Dart CLI application installs it separately. Normal Dart and Flutter commands run the build hooks. The generated bindings are checked in, so applications need neither ffigen nor libclang.
 
-exarmo also requires Rust 1.91.1 or later, Cargo and the Rust standard library for your build target. For Android ARM64, install it with `rustup target add aarch64-linux-android`. Rust dependencies are vendored and build offline. Zydis and Capstone do not require Rust. The native library's architecture must match your application, independently of the instructions you decode.
+exarmo also needs Rust 1.91.1 or later, and the build hook finds or installs it. The hook uses `cargo` from `PATH`, then the toolchain of `rustup` from `PATH` or from `~/.cargo/bin`, or `%USERPROFILE%\.cargo\bin` on Windows, which also covers an IDE started before Rust was installed. Dart on Windows cannot open the `cargo.exe` symlink that rustup creates (errno 448), so the hook runs the toolchain's own `cargo.exe` and `rustc.exe` from `rustup which`. When rustup manages the toolchain, the hook runs `rustup target add` for the build target. Without any Rust, the hook downloads rustup-init 1.29.1 from `static.rust-lang.org`, checks its SHA-256 against the hash in the package and installs Rust 1.91.1 with the minimal profile into its shared output directory, without changing `PATH` or the shell profile. Rustup-init is pinned for Windows x64, ARM64 and x86, macOS x64 and ARM64, and Linux x64 and ARM64 hosts. The first such build needs network access and 523 MB of disk on macOS ARM64, and later builds reuse the toolchain. Rust dependencies of exarmo are vendored and build offline. Zydis and Capstone need no Rust. The native library is built for your application's architecture, regardless of the instructions you decode.
 
 ### Windows
 
-1. Install Visual Studio or Visual Studio Build Tools with **Desktop development with C++** and a Windows SDK. Flutter Windows projects also need these tools.
-2. If you enable exarmo, install Rust 1.91.1 or later using [rustup-init.exe](https://rust-lang.org/tools/install/). Choose the installer for your computer: x64 for an x64 PC, ARM64 for Windows on ARM, including Parallels on Apple Silicon. Zydis and Capstone do not need Rust.
-3. After installing Rust, restart your terminal and IDE. The installer adds `%USERPROFILE%\.cargo\bin` to `PATH`, but already running programs keep their previous environment.
-4. In your Flutter project directory, run these commands for an x64 application:
-
-```powershell
-cargo --version
-rustc --version
-rustup target add x86_64-pc-windows-msvc
-flutter pub get
-flutter build windows --release
-```
-
-The first 3 commands are needed only when using exarmo. If `cargo` is still not found, check that `%USERPROFILE%\.cargo\bin\cargo.exe` exists. If it exists, refresh `PATH` for the current PowerShell session:
-
-```powershell
-$env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-```
-
-The build hooks compile the selected engines and package `disassembler_windows_plugin.dll` automatically. Applications using the DLL need the Microsoft Visual C++ Redistributable for their architecture, which provides `VCRUNTIME140.dll`. UCRT is already part of Windows 10 and 11. C uses `/MD`, and Rust builds with `crt-static` disabled. `/MT` is not used.
+Build from your Flutter project directory with `flutter pub get` and `flutter build windows --release`. Rust needs no manual step, since the hook finds or installs it as described above. The hooks build `disassembler_windows_plugin.dll` and bundle it. C compiles with `/MD` and Rust with `crt-static` off, so the DLL needs the Microsoft Visual C++ Redistributable for its architecture, which provides `VCRUNTIME140.dll`. UCRT ships with Windows 10 and 11.
 
 ## Native library locations
 
 | Platform | Flutter artifact | Location |
 | --- | --- | --- |
-| Windows | `disassembler_windows_plugin.dll` | Beside application `.exe` |
-| Linux | `lib_disassembler_linux_plugin.so` | Application bundle's `lib/` |
-| Android | `lib_disassembler_android_plugin.so` | APK's `lib/<ABI>/` |
+| Windows | `disassembler_windows_plugin.dll` | Next to the application `.exe` |
+| Linux | `lib_disassembler_linux_plugin.so` | `lib/` of the application bundle |
+| Android | `lib_disassembler_android_plugin.so` | `lib/<ABI>/` of the APK |
 | macOS | `lib_disassembler_macos_plugin.framework` | `Contents/Frameworks/` |
-| iOS | `lib_disassembler_ios_plugin.framework` | Application's `Frameworks/` |
+| iOS | `lib_disassembler_ios_plugin.framework` | `Frameworks/` of the application |
 
-Apple compiler output is `liblib_disassembler_macos_plugin.dylib` or `liblib_disassembler_ios_plugin.dylib`. Flutter removes the first `lib` when creating frameworks. Dart CLI bundles retain the `.dylib` filename. Code asset lookup handles these paths.
+On Apple platforms the compiler writes `liblib_disassembler_macos_plugin.dylib` or `liblib_disassembler_ios_plugin.dylib`. Flutter drops the first `lib` when it creates the framework, and Dart CLI bundles keep the `.dylib` name. Code asset lookup finds both.
 
 ## Updating engines
 
-The package includes Zydis 4.1.1 with Zycore 1.5.2, exarmo 0.4.0 and Capstone 6.0.0-Alpha11. Each engine's JSON manifest records its source commit. To update an engine, run its script from the package directory with an upstream release tag:
+The package includes Zydis 4.1.1 with Zycore 1.5.2, exarmo 0.4.0 and Capstone 6.0.0-Alpha11, and each engine's JSON manifest records its source commit. Run an engine's script from the package directory with an upstream release tag:
 
 ```sh
 dart pub get
@@ -157,16 +154,16 @@ dart analyze
 dart test --concurrency=2
 ```
 
-These scripts replace the included source and regenerate bindings and models. They require Git and LLVM/libclang. Review the changes and run the tests on your target platforms before releasing an update.
+The scripts replace the vendored sources and regenerate the bindings and models, and they need Git and LLVM with libclang. Review the diff and run the tests on your target platforms before releasing an update.
 
-To compile for Android ARM64 without running the result:
+To compile for Android ARM64 without running anything:
 
 ```sh
 dart run tool/build_target.dart android arm64 zydis,exarmo,capstone
 ```
 
-This command builds all 3 engines for Android API 21 and includes Capstone's x86/AArch64 decoders. Decoder tests read instruction bytes. They do not load or execute PE files.
+This builds all 3 engines for Android API 21 with Capstone's x86 and AArch64 decoders. The decoder tests read instruction bytes and never load or run PE files.
 
 ## Licenses
 
-The Dart package uses BSD-3-Clause, Zydis and Zycore use MIT, and exarmo uses Apache-2.0. Capstone includes its own license and licenses for LLVM-derived code. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists the license texts and notices to include when distributing the native library, including Arm ACLE attribution and Rust runtime notices.
+The Dart package is BSD-3-Clause, Zydis and Zycore are MIT, and exarmo is Apache-2.0. Capstone has its own license plus the licenses of its LLVM-derived code. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists the license texts and notices to ship with the native library, including the Arm ACLE attribution and the Rust runtime notices.

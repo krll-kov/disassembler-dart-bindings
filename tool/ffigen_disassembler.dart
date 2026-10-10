@@ -24,6 +24,13 @@ Future<void> main() async {
           node.isIncluded = node.originalName.startsWith('disassembler_');
           node.recordUse = node.isIncluded;
         },
+        struct: (Struct node) {
+          node.isIncluded = node.originalName.startsWith('disassembler_');
+          node.dependencies = CompoundDependencies.full;
+        },
+        macroConstant: (MacroConstant node) {
+          node.isIncluded = node.originalName.startsWith('DISASSEMBLER_');
+        },
       ),
     ],
   ).generate();

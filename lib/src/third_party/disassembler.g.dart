@@ -14,9 +14,123 @@ import 'package:meta/meta.dart' as meta;
 external int disassembler_backend_mask();
 
 @meta.RecordUse()
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
+external void disassembler_close(ffi.Pointer<ffi.Void> context);
+
+@meta.RecordUse()
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Void>,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int64,
+    ffi.Uint64,
+    ffi.Int32,
+    ffi.Uint32,
+    ffi.Int32,
+    ffi.Pointer<disassembler_batch>,
+  )
+>()
+external int disassembler_decode(
+  ffi.Pointer<ffi.Void> context,
+  ffi.Pointer<ffi.Uint8> bytes,
+  int length,
+  int address,
+  int limit,
+  int stop,
+  int resume,
+  ffi.Pointer<disassembler_batch> batch,
+);
+
+@meta.RecordUse()
 @ffi.Native<ffi.UnsignedInt Function()>()
 external int disassembler_exarmo_decoder_mask();
 
 @meta.RecordUse()
+@ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>, ffi.Int64)>()
+external ffi.Pointer<ffi.Char> disassembler_mnemonic(
+  ffi.Pointer<ffi.Void> context,
+  int key,
+);
+
+@meta.RecordUse()
+@ffi.Native<ffi.Pointer<ffi.Void> Function(ffi.Int32, ffi.Int32)>()
+external ffi.Pointer<ffi.Void> disassembler_open(int backend, int architecture);
+
+@meta.RecordUse()
 @ffi.Native<ffi.UnsignedInt Function()>()
 external int disassembler_zydis_feature_mask();
+
+const int DISASSEMBLER_INSTRUCTION_STRIDE = 8;
+
+const int DISASSEMBLER_OPERAND_STRIDE = 8;
+
+const int DISASSEMBLER_STATUS_CAPACITY = -2;
+
+const int DISASSEMBLER_STATUS_FAILED = -3;
+
+const int DISASSEMBLER_STATUS_OK = 0;
+
+const int DISASSEMBLER_STATUS_UNSUPPORTED = -1;
+
+const int DISASSEMBLER_STOP_CALL = 2;
+
+const int DISASSEMBLER_STOP_INTERRUPT = 8;
+
+const int DISASSEMBLER_STOP_INVALID = 16;
+
+const int DISASSEMBLER_STOP_JUMP = 1;
+
+const int DISASSEMBLER_STOP_RETURN = 4;
+
+final class disassembler_batch extends ffi.Struct {
+  external ffi.Pointer<ffi.Int64> instructions;
+
+  external ffi.Pointer<ffi.Int64> operands;
+
+  external ffi.Pointer<ffi.Uint32> registers;
+
+  @ffi.Int32()
+  external int instruction_capacity;
+
+  @ffi.Int32()
+  external int operand_capacity;
+
+  @ffi.Int32()
+  external int register_capacity;
+
+  @ffi.Int32()
+  external int count;
+
+  @ffi.Int32()
+  external int operand_count;
+
+  @ffi.Int32()
+  external int register_count;
+
+  @ffi.Int64()
+  external int consumed;
+
+  static ffi.Pointer<disassembler_batch> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Int64> instructions,
+    required ffi.Pointer<ffi.Int64> operands,
+    required ffi.Pointer<ffi.Uint32> registers,
+    required int instruction_capacity,
+    required int operand_capacity,
+    required int register_capacity,
+    required int count,
+    required int operand_count,
+    required int register_count,
+    required int consumed,
+  }) => $allocator<disassembler_batch>()
+    ..ref.instructions = instructions
+    ..ref.operands = operands
+    ..ref.registers = registers
+    ..ref.instruction_capacity = instruction_capacity
+    ..ref.operand_capacity = operand_capacity
+    ..ref.register_capacity = register_capacity
+    ..ref.count = count
+    ..ref.operand_count = operand_count
+    ..ref.register_count = register_count
+    ..ref.consumed = consumed;
+}

@@ -186,6 +186,7 @@ CLibrary disassemblerLibrary(
   List<String> exarmoLibraries = const [],
 }) {
   final List<String> sources = [
+    root.resolve('src/batch.c').toFilePath(),
     root.resolve('src/disassembler.c').toFilePath(),
   ];
   final List<String> includes = [];
