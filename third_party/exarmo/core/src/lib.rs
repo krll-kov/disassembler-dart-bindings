@@ -16,7 +16,7 @@ extern crate alloc;
 pub mod address;
 pub mod branch;
 pub mod bytes;
-#[cfg(feature = "std")]
+#[cfg(feature = "capi")]
 pub mod capi;
 pub mod condition;
 pub mod decode;

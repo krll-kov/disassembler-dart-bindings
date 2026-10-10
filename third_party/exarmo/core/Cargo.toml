@@ -16,5 +16,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["std"]
-std = ["alloc"]
+std = ["alloc", "capi"]
+capi = []
 alloc = []

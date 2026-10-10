@@ -499,6 +499,7 @@ final class DecodedBatch {
     };
   }
 
+  @pragma('vm:prefer-inline')
   int _word(int index, int field) {
     if (index < 0 || index >= _count)
       throw IndexError.withLength(
@@ -593,6 +594,7 @@ final class DecodedBatch {
     return Uint32List.sublistView(_registers, start, start + count);
   }
 
+  @pragma('vm:prefer-inline')
   int _operand(int index, int operand, int field) {
     final int count = operandCount(index);
     if (operand < 0 || operand >= count)

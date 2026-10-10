@@ -3,6 +3,7 @@
 //! library adds its own operand model and entry points.
 
 use core::fmt::{self, Write};
+#[cfg(feature = "std")]
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use crate::Decoded;
@@ -261,8 +262,41 @@ impl From<crate::view::Writeback> for Writeback {
 }
 
 /// Run `f`, and should it panic, report `fallback` instead.
+#[cfg(feature = "std")]
 pub fn guarded<T>(fallback: T, f: impl FnOnce() -> T) -> T {
     catch_unwind(AssertUnwindSafe(f)).unwrap_or(fallback)
+}
+
+/// Run `f`, and should it panic, report `fallback` instead. Without `std`
+/// the embedder links `exarmo_capi_try`, which calls `body` under `setjmp`,
+/// and `exarmo_capi_panic`, which the panic handler calls to `longjmp` back
+#[cfg(not(feature = "std"))]
+pub fn guarded<T, F: FnOnce() -> T>(fallback: T, f: F) -> T {
+    unsafe extern "C" fn body<T, F: FnOnce() -> T>(state: *mut core::ffi::c_void) {
+        let slot = unsafe { &mut *(state as *mut (Option<F>, Option<T>)) };
+        if let Some(f) = slot.0.take() {
+            slot.1 = Some(f());
+        }
+    }
+    let mut slot: (Option<F>, Option<T>) = (Some(f), None);
+    let state = &mut slot as *mut (Option<F>, Option<T>) as *mut core::ffi::c_void;
+    let completed = unsafe { exarmo_capi_try(body::<T, F>, state) };
+    match slot.1 {
+        Some(value) if completed => value,
+        _ => fallback,
+    }
+}
+
+#[cfg(not(feature = "std"))]
+unsafe extern "C" {
+    fn exarmo_capi_try(body: unsafe extern "C" fn(*mut core::ffi::c_void), state: *mut core::ffi::c_void) -> bool;
+    fn exarmo_capi_panic() -> !;
+}
+
+#[cfg(all(not(feature = "std"), not(test)))]
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    unsafe { exarmo_capi_panic() }
 }
 
 /// The opaque storage a C face decodes an instruction into,
@@ -395,7 +429,7 @@ pub unsafe fn buffer<'a, T>(ptr: *mut T, capacity: usize) -> &'a mut [T] {
     if ptr.is_null() || capacity == 0 {
         &mut []
     } else {
-        unsafe { std::slice::from_raw_parts_mut(ptr, capacity) }
+        unsafe { core::slice::from_raw_parts_mut(ptr, capacity) }
     }
 }
 
@@ -409,7 +443,7 @@ pub unsafe fn bytes<'a>(ptr: *const u8, len: usize) -> Option<&'a [u8]> {
     match (ptr.is_null(), len) {
         (_, 0) => Some(&[]),
         (true, _) => None,
-        (false, _) => Some(unsafe { std::slice::from_raw_parts(ptr, len) }),
+        (false, _) => Some(unsafe { core::slice::from_raw_parts(ptr, len) }),
     }
 }
 

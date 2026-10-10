@@ -64,6 +64,13 @@ Future<void> main(List<String> arguments) async {
       await target.parent.create(recursive: true);
       await source.copy(target.path);
     }
+    // Upstream C API links std for catch_unwind, which adds LoadLibraryA and
+    // NtWriteFile imports, so we build it without std and stop the update when
+    // the patch does not fit a new tag
+    await _run('git', [
+      'apply',
+      root.resolve('tool/exarmo.patch').toFilePath(),
+    ], staged.uri);
     if (await vendor.exists()) await vendor.delete(recursive: true);
     for (final String path in paths) {
       final File target = File.fromUri(vendor.uri.resolve(path));

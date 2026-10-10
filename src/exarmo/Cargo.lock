@@ -42,4 +42,5 @@ version = "0.1.0"
 dependencies = [
  "exarmo-aarch32-capi",
  "exarmo-aarch64-capi",
+ "exarmo-core",
 ]

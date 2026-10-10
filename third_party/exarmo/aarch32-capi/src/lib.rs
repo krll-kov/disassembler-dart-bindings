@@ -14,6 +14,7 @@
 //! blocks advances the state through `exarmo_aarch32_it_state_after`.
 
 #![warn(missing_docs)]
+#![no_std]
 
 use exarmo_aarch32::{Cond, Encoding, Instruction, ItState, Mnemonic};
 pub use exarmo_core::capi::{Branch, FlagEffect, Status, Str, TextSize, Token};
@@ -37,8 +38,8 @@ unsafe impl Storage for CInstruction {
     type Instruction = Instruction;
 }
 
-const _: () = assert!(std::mem::size_of::<Instruction>() <= std::mem::size_of::<CInstruction>());
-const _: () = assert!(std::mem::align_of::<Instruction>() <= std::mem::align_of::<CInstruction>());
+const _: () = assert!(core::mem::size_of::<Instruction>() <= core::mem::size_of::<CInstruction>());
+const _: () = assert!(core::mem::align_of::<Instruction>() <= core::mem::align_of::<CInstruction>());
 
 /// How many bytes of storage a decode writes, as the library was built.
 ///
@@ -47,7 +48,7 @@ const _: () = assert!(std::mem::align_of::<Instruction>() <= std::mem::align_of:
 /// this against it.
 #[unsafe(no_mangle)]
 pub extern "C" fn exarmo_aarch32_instruction_size() -> usize {
-    std::mem::size_of::<CInstruction>()
+    core::mem::size_of::<CInstruction>()
 }
 
 /// Whether a T32 instruction is inside an IT block, `exarmo_aarch32_it_kind`.
@@ -434,7 +435,7 @@ pub unsafe extern "C" fn exarmo_aarch32_instruction_text(
     capacity: usize,
 ) -> usize {
     unsafe {
-        exarmo_aarch32_instruction_tokens(inst, address, text, capacity, std::ptr::null_mut(), 0)
+        exarmo_aarch32_instruction_tokens(inst, address, text, capacity, core::ptr::null_mut(), 0)
     }
     .length
 }

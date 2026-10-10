@@ -100,7 +100,13 @@ Future<void> main(List<String> args) async {
     await library.link(
       input: input,
       output: output,
-      linkerOptions: LinkerOptions.treeshake(symbolsToKeep: symbols),
+      linkerOptions: LinkerOptions.treeshake(
+        // MSVC writes the link time into the PE header, so each build of the
+        // same sources got a new SHA-256 without the antivirus reputation of
+        // the last one, and /Brepro writes a content hash there instead
+        flags: [if (input.config.code.targetOS == OS.windows) '/Brepro'],
+        symbolsToKeep: symbols,
+      ),
     );
   });
 }

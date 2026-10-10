@@ -20,8 +20,12 @@ name = "exarmo_aarch32_capi"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-exarmo-aarch32.workspace = true
-exarmo-core = { workspace = true, features = ["std"] }
+exarmo-aarch32 = { path = "../aarch32", default-features = false }
+exarmo-core = { workspace = true, features = ["capi"] }
+
+[features]
+default = ["std"]
+std = ["exarmo-core/std"]
 
 [dev-dependencies]
 exarmo-testing = { path = "../testing" }
