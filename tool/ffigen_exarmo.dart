@@ -90,6 +90,8 @@ Future<void> main() async {
   exports.writeln(
     '#include "../third_party/exarmo/aarch64-capi/include/exarmo/aarch64.h"',
   );
+  exports.writeln('#pragma GCC diagnostic push');
+  exports.writeln('#pragma GCC diagnostic ignored "-Wdeprecated-declarations"');
   exports.writeln('__attribute__((used, visibility("default")))');
   exports.writeln('const void *const disassembler_exarmo_exports[] = {');
   for (final String symbol in [...functions, ...globals]..sort()) {
@@ -101,6 +103,7 @@ Future<void> main() async {
     exports.writeln('#endif');
   }
   exports.writeln('};');
+  exports.writeln('#pragma GCC diagnostic pop');
   exports.writeln('#endif');
   File.fromUri(root.resolve('src/exarmo_exports.c'))
       .writeAsStringSync(exports.toString());

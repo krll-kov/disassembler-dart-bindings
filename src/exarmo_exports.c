@@ -341,6 +341,8 @@
 #else
 #include "../third_party/exarmo/aarch32-capi/include/exarmo/aarch32.h"
 #include "../third_party/exarmo/aarch64-capi/include/exarmo/aarch64.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 __attribute__((used, visibility("default")))
 const void *const disassembler_exarmo_exports[] = {
 #if defined(DISASSEMBLER_EXARMO_ARM)
@@ -488,4 +490,5 @@ const void *const disassembler_exarmo_exports[] = {
   (const void *)&exarmo_aarch64_sysregs,
 #endif
 };
+#pragma GCC diagnostic pop
 #endif
