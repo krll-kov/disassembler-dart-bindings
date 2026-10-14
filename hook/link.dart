@@ -54,6 +54,11 @@ Future<void> main(List<String> args) async {
           return symbol == null ? const <String>[] : [symbol];
         })
         .toSet();
+    // Record use names the typed data call of _decodeInPlace by a compiler
+    // made helper, so the symbol stays whenever any native function is used
+    if (symbols != null && symbols.isNotEmpty) {
+      symbols.add('disassembler_decode');
+    }
     if (symbols != null && configuration.backends.contains('exarmo')) {
       if (configuration.exarmoDecoders.contains('arm')) {
         symbols.add('exarmo_aarch32_sysregs');

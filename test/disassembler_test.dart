@@ -149,6 +149,26 @@ void main() {
     expect(instruction.operands.first.access, isNull);
   });
 
+  test('Buffer decodes bytes changed after it was created', () {
+    final decoder = Disassembler(
+      DisassemblerArch.x64,
+      backend: DisassemblerBackend.zydis,
+    );
+    final Uint8List bytes = Uint8List.fromList([0x48, 0x01, 0xd8]);
+    final buffer = DisassemblerBuffer(bytes);
+    final reader = decoder.reader(buffer);
+    final batch = DecodedBatch();
+    bytes[1] = 0x29;
+
+    reader.decode(batch);
+
+    expect(batch.mnemonic(0), 'sub');
+    batch.close();
+    reader.close();
+    buffer.close();
+    decoder.close();
+  });
+
   test('Zydis rejects retained common fields after callback and closure', () {
     final decoder = Disassembler(
       DisassemblerArch.x64,

@@ -169,32 +169,23 @@ final class Instruction {
   List<int>? get registersWritten => registerAccess?.written;
 }
 
+/// Bytes that readers decode in place, without a copy, so changing them
+/// changes what later decoding returns.
 final class DisassemblerBuffer {
   final int length;
-  Pointer<Uint8> _pointer = nullptr;
   Uint8List? _view;
   int _activeReaders = 0;
 
-  DisassemblerBuffer(Uint8List bytes) : length = bytes.length {
-    _pointer = malloc<Uint8>(length == 0 ? 1 : length);
-    _pointer.asTypedList(length).setAll(0, bytes);
-  }
+  DisassemblerBuffer(Uint8List bytes) : length = bytes.length, _view = bytes;
 
-  bool get isClosed => _pointer == nullptr;
+  bool get isClosed => _view == null;
 
-  Pointer<Uint8> get pointer {
-    if (isClosed) throw StateError('Disassembler buffer is closed');
-    return _pointer;
-  }
-
-  Uint8List get _bytes => _view ??= pointer.asTypedList(length);
+  Uint8List get _bytes =>
+      _view ?? (throw StateError('Disassembler buffer is closed'));
 
   void close() {
     if (_activeReaders != 0)
       throw StateError('Cannot close buffer during decoding');
-    if (isClosed) return;
-    malloc.free(_pointer);
-    _pointer = nullptr;
     _view = null;
   }
 }
@@ -312,6 +303,33 @@ final class Disassembler {
   }
 }
 
+// A native copy of the input doubled the memory of a 59 MB file, so a leaf
+// call reads Dart bytes in place. Declared in the generated library, it lost
+// its typed data helper in incremental test compiles, so it is declared here.
+/// `disassembler_decode` of `src/disassembler.h` taking Dart bytes in place.
+@Native<
+  Int32 Function(
+    Pointer<Void>,
+    Pointer<Uint8>,
+    Int64,
+    Uint64,
+    Int32,
+    Uint32,
+    Int32,
+    Pointer<native.disassembler_batch>,
+  )
+>(symbol: 'disassembler_decode', isLeaf: true)
+external int _decodeInPlace(
+  Pointer<Void> context,
+  Pointer<Uint8> bytes,
+  int length,
+  int address,
+  int limit,
+  int stop,
+  int resume,
+  Pointer<native.disassembler_batch> batch,
+);
+
 final class DisassemblerReader {
   final Disassembler _engine;
   final DisassemblerBuffer _buffer;
@@ -336,7 +354,7 @@ final class DisassemblerReader {
     if (_closed) throw StateError('Disassembler reader is closed');
     if (batch._closed) throw StateError('Decoded batch is closed');
     final int stop = RangeError.checkValidRange(start, end, _buffer.length);
-    final Pointer<Uint8> pointer = _buffer.pointer;
+    final Uint8List bytes = Uint8List.sublistView(_buffer._bytes, start, stop);
     int flags = stopAfterInvalid ? native.DISASSEMBLER_STOP_INVALID : 0;
     for (final ControlFlow flow in stopAfter) {
       flags |= switch (flow) {
@@ -347,9 +365,9 @@ final class DisassemblerReader {
         ControlFlow.none => 0,
       };
     }
-    final int status = native.disassembler_decode(
+    final int status = _decodeInPlace(
       _engine._context,
-      pointer + start,
+      bytes.address,
       stop - start,
       address,
       limit,
