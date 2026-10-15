@@ -134,19 +134,108 @@ void main() {
     );
   });
 
-  test('Exarmo does not invent unavailable register access metadata', () {
-    final Disassembler decoder = Disassembler(
-      DisassemblerArch.arm64,
-      backend: DisassemblerBackend.exarmo,
-    );
-    addTearDown(decoder.close);
-    final Instruction instruction = decoder
-        .decode(Uint8List.fromList([0x20, 0, 0x80, 0xd2]))
+  for (final (
+        DisassemblerArch architecture,
+        DisassemblerBackend backend,
+        List<int> bytes,
+      )
+      in [
+        (DisassemblerArch.x86, DisassemblerBackend.zydis, _x86Calls),
+        (DisassemblerArch.x64, DisassemblerBackend.zydis, _x86Calls),
+        (DisassemblerArch.arm64, DisassemblerBackend.exarmo, _arm64Calls),
+      ]) {
+    test('${architecture.name} call targets match decoded direct calls', () {
+      final Disassembler decoder = Disassembler(architecture, backend: backend);
+      addTearDown(decoder.close);
+      final Uint8List code = Uint8List.fromList(bytes);
+      final DisassemblerBuffer buffer = DisassemblerBuffer(code);
+      addTearDown(buffer.close);
+      final DisassemblerReader reader = decoder.reader(buffer);
+      const int address = 0x401000;
+      for (final int start in [
+        0,
+        architecture == DisassemblerArch.arm64 ? 4 : 3,
+      ]) {
+        final List<int> decoded = _decodedCalls(
+          decoder,
+          Uint8List.sublistView(code, start),
+          address + start,
+        );
+        expect(decoded, isNotEmpty);
+        expect(
+          reader.callTargets(start: start, address: address + start),
+          decoded,
+        );
+      }
+    });
+  }
+
+  group('Exarmo ARM64 register access', () {
+    late Disassembler decoder;
+
+    setUp(() {
+      decoder = Disassembler(
+        DisassemblerArch.arm64,
+        backend: DisassemblerBackend.exarmo,
+      );
+    });
+    tearDown(() => decoder.close());
+
+    Instruction decode(int word) => decoder
+        .decode(
+          Uint8List(4)..buffer.asByteData().setUint32(0, word, Endian.little),
+        )
         .single;
-    expect(instruction.registerAccess, isNull);
-    expect(instruction.registersRead, isNull);
-    expect(instruction.registersWritten, isNull);
-    expect(instruction.operands.first.access, isNull);
+
+    List<String>? written(Instruction instruction) =>
+        instruction.registersWritten?.map(decoder.registerName).toList();
+
+    int? memoryAccess(Instruction instruction) => instruction.operands
+        .singleWhere((Operand o) => o.kind == OperandKind.memory)
+        .access;
+
+    for (final (int word, String mnemonic, List<String> registers) in [
+      (0xd2800020, 'mov', ['x0']),
+      (0x91000420, 'add', ['x0']),
+      (0x910043ff, 'add', ['sp']),
+      (0xf100143f, 'cmp', []),
+      (0x9ac20820, 'udiv', ['x0']),
+      (0xcb0103e0, 'neg', ['x0']),
+      (0x9e670020, 'fmov', ['d0']),
+      (0x94000001, 'bl', ['x30']),
+      (0xd65f03c0, 'ret', []),
+    ]) {
+      test('$mnemonic 0x${word.toRadixString(16)} writes $registers', () {
+        final Instruction instruction = decode(word);
+        expect(instruction.mnemonic, mnemonic);
+        expect(written(instruction), registers);
+      });
+    }
+
+    for (final (int word, String mnemonic, List<String> registers, int access)
+        in [
+          (0xf9000420, 'str', [], OperandAccess.write),
+          (0xf8008c20, 'str', ['x1'], OperandAccess.write),
+          (0xf9400020, 'ldr', ['x0'], OperandAccess.read),
+          (0xa8c107e0, 'ldp', ['x0', 'x1', 'sp'], OperandAccess.read),
+          (0xc8027c20, 'stxr', ['w2'], OperandAccess.write),
+          (0xf8208022, 'swp', ['x2'], OperandAccess.read | OperandAccess.write),
+          (0xf9800020, 'prfm', [], 0),
+        ]) {
+      test('$mnemonic 0x${word.toRadixString(16)} writes $registers and '
+          'accesses memory as $access', () {
+        final Instruction instruction = decode(word);
+        expect(instruction.mnemonic, mnemonic);
+        expect(written(instruction), unorderedEquals(registers));
+        expect(memoryAccess(instruction), access);
+      });
+    }
+
+    test('Encoding outside the table reports no access', () {
+      final Instruction instruction = decode(0x4c407000);
+      expect(instruction.mnemonic, 'ld1');
+      expect(instruction.registerAccess, isNull);
+    });
   });
 
   test('Buffer decodes bytes changed after it was created', () {
@@ -243,4 +332,33 @@ void main() {
       expect(instructions.single.registerAccess, isNull);
     });
   }
+}
+
+/// A direct call forward and back, an indirect call, and a byte that x64
+/// rejects between them.
+const List<int> _x86Calls = [
+  0xE8, 0x05, 0x00, 0x00, 0x00, 0xFF, 0xD0, 0x06, //
+  0xE8, 0xF0, 0xFF, 0xFF, 0xFF, 0xC3,
+];
+
+/// `bl` forward, `blr x8`, `bl` back and `ret`.
+const List<int> _arm64Calls = [
+  0x02, 0x00, 0x00, 0x94, 0x00, 0x01, 0x3F, 0xD6, //
+  0xFF, 0xFF, 0xFF, 0x97, 0xC0, 0x03, 0x5F, 0xD6,
+];
+
+/// The last immediate of each call that decode gives for [code].
+List<int> _decodedCalls(Disassembler decoder, Uint8List code, int address) {
+  final List<int> targets = [];
+  for (final Instruction instruction in decoder.decode(
+    code,
+    address: address,
+  )) {
+    if (instruction.controlFlow != ControlFlow.call) continue;
+    final Iterable<Operand> immediates = instruction.operands.where(
+      (Operand operand) => operand.kind == OperandKind.immediate,
+    );
+    if (immediates.isNotEmpty) targets.add(immediates.last.immediate);
+  }
+  return targets;
 }

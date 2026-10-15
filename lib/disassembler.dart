@@ -330,7 +330,32 @@ external int _decodeInPlace(
   Pointer<native.disassembler_batch> batch,
 );
 
+/// `disassembler_call_targets` of `src/disassembler.h` taking Dart bytes in
+/// place.
+@Native<
+  Int64 Function(
+    Pointer<Void>,
+    Pointer<Uint8>,
+    Int64,
+    Uint64,
+    Pointer<Uint64>,
+    Int64,
+    Pointer<Int64>,
+  )
+>(symbol: 'disassembler_call_targets', isLeaf: true)
+external int _callTargetsInPlace(
+  Pointer<Void> context,
+  Pointer<Uint8> bytes,
+  int length,
+  int address,
+  Pointer<Uint64> targets,
+  int capacity,
+  Pointer<Int64> consumed,
+);
+
 final class DisassemblerReader {
+  static const int _callTargetCapacity = 4096;
+
   final Disassembler _engine;
   final DisassemblerBuffer _buffer;
   bool _closed = false;
@@ -381,6 +406,42 @@ final class DisassemblerReader {
     }
     batch._attach(_engine, _buffer, start, address, flags);
     return batch.length;
+  }
+
+  /// The targets of direct calls in a linear decode from [start] to [end],
+  /// in order, where [start] has virtual [address].
+  ///
+  /// Returns null for a backend that cannot list them, Capstone and 32-bit
+  /// ARM, where [decode] gives the same calls.
+  List<int>? callTargets({int start = 0, int? end, int address = 0}) {
+    _engine._ensureOpen();
+    if (_closed) throw StateError('Disassembler reader is closed');
+    final int stop = RangeError.checkValidRange(start, end, _buffer.length);
+    final Uint64List chunk = Uint64List(_callTargetCapacity);
+    final Int64List consumed = Int64List(1);
+    final List<int> targets = [];
+    int offset = start;
+    while (offset < stop) {
+      final Uint8List bytes = Uint8List.sublistView(
+        _buffer._bytes,
+        offset,
+        stop,
+      );
+      final int count = _callTargetsInPlace(
+        _engine._context,
+        bytes.address,
+        stop - offset,
+        address + offset - start,
+        chunk.address,
+        chunk.length,
+        consumed.address,
+      );
+      if (count == native.DISASSEMBLER_STATUS_UNSUPPORTED) return null;
+      targets.addAll(Uint64List.sublistView(chunk, 0, count));
+      if (consumed[0] == 0) break;
+      offset += consumed[0];
+    }
+    return targets;
   }
 
   void visit(

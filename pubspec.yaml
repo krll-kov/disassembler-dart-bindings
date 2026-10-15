@@ -17,6 +17,7 @@ dev_dependencies:
   dart_style: ^3.1.13
   ffigen: ^23.0.0
   test: ^1.32.0
+  xml: ^7.1.0
 hooks:
   user_defines:
     disassembler:

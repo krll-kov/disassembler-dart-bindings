@@ -22,6 +22,7 @@
 #endif
 #if defined(DISASSEMBLER_EXARMO_AARCH64)
 #include "../third_party/exarmo/aarch64-capi/include/exarmo/aarch64.h"
+#include "aarch64_effects.h"
 #endif
 
 enum {
@@ -593,6 +594,55 @@ static void Operand64(const exarmo_aarch64_operand* op, uint64_t address,
   }
 }
 
+enum {
+  kArm64MaxWrites = 8,
+  kArm64MaxRegisters = 2 * EXARMO_AARCH64_MAX_OPERANDS + kArm64MaxWrites,
+};
+
+static int64_t Arm64Written(const Aarch64Write* write, uint32_t word) {
+  if (write->kind == kWriteFixed)
+    return ExarmoRegister(kArchArm64, write->register_class, write->number);
+  const int value = (int)((word >> write->lsb) & ((1u << write->width) - 1));
+  if (write->kind == kWriteStackPointer)
+    return value == 31
+               ? ExarmoRegister(kArchArm64, EXARMO_AARCH64_REG_X_SP, 31)
+               : 0;
+  if (write->register_class == EXARMO_AARCH64_REG_X && value == 31) return 0;
+  return ExarmoRegister(kArchArm64, write->register_class,
+                        value + write->number);
+}
+
+// W5 in an operand and X5 in the table are one register, and so are the
+// views B5 to Q5 and Z5 of one vector, so registers compare by storage
+static int64_t Arm64Storage(int64_t reg) {
+  const int reg_class = (int)(reg >> 8 & 0xff);
+  const int number = (int)(reg & 0xff);
+  switch (reg_class) {
+    case EXARMO_AARCH64_REG_W:
+    case EXARMO_AARCH64_REG_X: return number == 31 ? -1 : number;
+    case EXARMO_AARCH64_REG_W_SP:
+    case EXARMO_AARCH64_REG_X_SP: return number == 31 ? 0x100 : number;
+    case EXARMO_AARCH64_REG_B:
+    case EXARMO_AARCH64_REG_H:
+    case EXARMO_AARCH64_REG_S:
+    case EXARMO_AARCH64_REG_D:
+    case EXARMO_AARCH64_REG_Q:
+    case EXARMO_AARCH64_REG_V:
+    case EXARMO_AARCH64_REG_Z: return 0x200 | number;
+    case EXARMO_AARCH64_REG_P:
+    case EXARMO_AARCH64_REG_PN: return 0x300 | number;
+    default: return reg;
+  }
+}
+
+static int Arm64WrittenIndex(const int64_t* written, int count, int64_t reg) {
+  if (reg == 0) return -1;
+  const int64_t storage = Arm64Storage(reg);
+  for (int i = 0; i < count; i++)
+    if (Arm64Storage(written[i]) == storage) return i;
+  return -1;
+}
+
 static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
                            uint64_t address, int32_t limit, uint32_t stop,
                            disassembler_batch* batch) {
@@ -600,7 +650,8 @@ static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
   exarmo_aarch64_instruction ins;
   exarmo_aarch64_operand ops[EXARMO_AARCH64_MAX_OPERANDS];
   int64_t at = 0;
-  while (at < length && HasRoom(batch, limit, EXARMO_AARCH64_MAX_OPERANDS, 0)) {
+  while (at < length && HasRoom(batch, limit, EXARMO_AARCH64_MAX_OPERANDS,
+                                kArm64MaxRegisters)) {
     const uint64_t pc = address + (uint64_t)at;
     const exarmo_aarch64_status status =
         exarmo_aarch64_decode_bytes(bytes + at, (size_t)(length - at), &ins);
@@ -632,6 +683,30 @@ static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
     const size_t count = exarmo_aarch64_instruction_operands(
         &ins, ops, EXARMO_AARCH64_MAX_OPERANDS);
     if (count > EXARMO_AARCH64_MAX_OPERANDS) return DISASSEMBLER_STATUS_FAILED;
+    const Aarch64Effect none = {0, 0, 0};
+    const Aarch64Effect* effect = encoding < EXARMO_AARCH64_ENCODING_COUNT
+                                      ? &kAarch64Effects[encoding]
+                                      : &none;
+    const bool known = (effect->flags & kEffectKnown) != 0;
+    int64_t written[kArm64MaxWrites];
+    int written_count = 0;
+    int64_t read[2 * EXARMO_AARCH64_MAX_OPERANDS];
+    int read_count = 0;
+    if (known) {
+      const uint32_t word = (uint32_t)bytes[at] |
+                            (uint32_t)bytes[at + 1] << 8 |
+                            (uint32_t)bytes[at + 2] << 16 |
+                            (uint32_t)bytes[at + 3] << 24;
+      for (int k = effect->write_start;
+           k < effect->write_start + effect->write_count; k++) {
+        const int64_t reg = Arm64Written(&kAarch64Writes[k], word);
+        if (reg == 0 || Arm64WrittenIndex(written, written_count, reg) >= 0)
+          continue;
+        if (written_count == kArm64MaxWrites) return DISASSEMBLER_STATUS_FAILED;
+        written[written_count++] = reg;
+      }
+      r.flags |= kFlagRegisterAccess;
+    }
     bool has_condition = false;
     for (size_t i = 0; i < count; i++) {
       const exarmo_aarch64_operand* op = &ops[i];
@@ -647,9 +722,29 @@ static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
       }
       Operand o;
       Operand64(op, pc, &o);
+      if (known && o.kind == kKindRegister) {
+        o.has_access = true;
+        const int index = Arm64WrittenIndex(written, written_count, o.reg);
+        o.access = index >= 0 ? 2 : 1;
+        if (index >= 0) written[index] = o.reg;
+        if (o.access == 1 && o.reg != 0) read[read_count++] = o.reg;
+      } else if (known && o.kind == kKindMemory) {
+        o.has_access = true;
+        o.access = ((effect->flags & kEffectReadsMemory) != 0 ? 1 : 0) |
+                   ((effect->flags & kEffectWritesMemory) != 0 ? 2 : 0);
+        if (o.base != 0) read[read_count++] = o.base;
+        if (o.index != 0) read[read_count++] = o.index;
+      }
       WriteOperand(batch, &o);
       r.operand_count++;
     }
+    for (int i = 0; i < read_count; i++)
+      batch->registers[batch->register_count + r.read_count++] =
+          (uint32_t)read[i];
+    for (int i = 0; i < written_count; i++)
+      batch->registers[batch->register_count + r.read_count +
+                       r.written_count++] = (uint32_t)written[i];
+    batch->register_count += r.read_count + r.written_count;
     WriteRecord(batch, &r);
     at += size;
     if (Stops(stop, r.flow, (r.flags & kFlagValid) != 0)) break;
@@ -1235,6 +1330,99 @@ int32_t disassembler_decode(void* context, const uint8_t* bytes,
   return status;
 }
 
+#if defined(DISASSEMBLER_ZYDIS)
+static int64_t ZydisCallTargets(Context* c, const uint8_t* bytes,
+                                int64_t length, uint64_t address,
+                                uint64_t* targets, int64_t capacity,
+                                int64_t* consumed) {
+  ZydisDecoderContext context;
+  ZydisDecodedInstruction ins;
+  ZydisDecodedOperand ops[ZYDIS_MAX_OPERAND_COUNT];
+  int64_t count = 0;
+  int64_t at = 0;
+  while (at < length && count < capacity) {
+    int64_t available = length - at;
+    if (available > ZYDIS_MAX_INSTRUCTION_LENGTH)
+      available = ZYDIS_MAX_INSTRUCTION_LENGTH;
+    if (!ZYAN_SUCCESS(ZydisDecoderDecodeInstruction(
+            &c->zydis, &context, bytes + at, (ZyanUSize)available, &ins))) {
+      at += 1;
+      continue;
+    }
+    if (ZydisFlow(&ins) == kFlowCall &&
+        ZYAN_SUCCESS(ZydisDecoderDecodeOperands(&c->zydis, &context, &ins, ops,
+                                                ins.operand_count_visible))) {
+      bool found = false;
+      int64_t target = 0;
+      for (int i = 0; i < ins.operand_count_visible; i++) {
+        const ZydisDecodedOperand* op = &ops[i];
+        if (op->type != ZYDIS_OPERAND_TYPE_IMMEDIATE) continue;
+        target = op->imm.is_signed ? op->imm.value.s
+                                   : (int64_t)op->imm.value.u;
+        if (op->imm.is_relative) {
+          target += (int64_t)(address + (uint64_t)at) + ins.length;
+          if (c->architecture == kArchX86) target &= 0xffffffff;
+        }
+        found = true;
+      }
+      if (found) targets[count++] = (uint64_t)target;
+    }
+    at += ins.length;
+  }
+  *consumed = at;
+  return count;
+}
+#endif
+
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+static int64_t Arm64CallTargets(const uint8_t* bytes, int64_t length,
+                                uint64_t address, uint64_t* targets,
+                                int64_t capacity, int64_t* consumed) {
+  exarmo_aarch64_instruction ins;
+  int64_t count = 0;
+  int64_t at = 0;
+  while (at < length && count < capacity) {
+    const uint64_t pc = address + (uint64_t)at;
+    if (exarmo_aarch64_decode_bytes(bytes + at, (size_t)(length - at), &ins) !=
+        EXARMO_AARCH64_STATUS_OK) {
+      at += length - at < 4 ? length - at : 4;
+      continue;
+    }
+    const exarmo_aarch64_branch branch =
+        exarmo_aarch64_instruction_branch(&ins, pc);
+    if (ExarmoFlow64(branch.kind) == kFlowCall && branch.has_target)
+      targets[count++] = branch.target;
+    at += exarmo_aarch64_instruction_length(&ins);
+  }
+  *consumed = at;
+  return count;
+}
+#endif
+
+int64_t disassembler_call_targets(void* context, const uint8_t* bytes,
+                                  int64_t length, uint64_t address,
+                                  uint64_t* targets, int64_t capacity,
+                                  int64_t* consumed) {
+  Context* c = context;
+  *consumed = 0;
+  if (length <= 0 || capacity <= 0) return 0;
+  switch (c->backend) {
+#if defined(DISASSEMBLER_ZYDIS)
+    case kBackendZydis:
+      return ZydisCallTargets(c, bytes, length, address, targets, capacity,
+                              consumed);
+#endif
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+    case kBackendExarmo:
+      if (c->architecture != kArchArm64) break;
+      return Arm64CallTargets(bytes, length, address, targets, capacity,
+                              consumed);
+#endif
+    default: break;
+  }
+  return DISASSEMBLER_STATUS_UNSUPPORTED;
+}
+
 const char* disassembler_mnemonic(void* context, int64_t key) {
   Context* c = context;
 #if defined(DISASSEMBLER_CAPSTONE)
@@ -1266,16 +1454,28 @@ void disassembler_close(void* context) {
 #define DISASSEMBLER_THREAD_LOCAL _Thread_local
 #endif
 
+// setjmp of Apple and Bionic saves signal mask with 2 system calls, 61% of
+// scan time of 20 MB ARM64 DLL, and panic changes no mask to restore
+#if defined(__APPLE__) || defined(__ANDROID__)
+typedef sigjmp_buf ExarmoJump;
+#define DISASSEMBLER_SETJMP(buffer) sigsetjmp(buffer, 0)
+#define DISASSEMBLER_LONGJMP(buffer) siglongjmp(buffer, 1)
+#else
+typedef jmp_buf ExarmoJump;
+#define DISASSEMBLER_SETJMP(buffer) setjmp(buffer)
+#define DISASSEMBLER_LONGJMP(buffer) longjmp(buffer, 1)
+#endif
+
 // exarmo builds without std, so a decoder panic returns here by longjmp, and
 // these sit beside disassembler_open because the link hook takes C objects
 // from an archive only for symbols that are still undefined
-static DISASSEMBLER_THREAD_LOCAL jmp_buf* exarmo_guard;
+static DISASSEMBLER_THREAD_LOCAL ExarmoJump* exarmo_guard;
 
 bool exarmo_capi_try(void (*body)(void*), void* state) {
-  jmp_buf here;
-  jmp_buf* outer = exarmo_guard;
+  ExarmoJump here;
+  ExarmoJump* outer = exarmo_guard;
   exarmo_guard = &here;
-  if (setjmp(here) != 0) {
+  if (DISASSEMBLER_SETJMP(here) != 0) {
     exarmo_guard = outer;
     return false;
   }
@@ -1285,9 +1485,9 @@ bool exarmo_capi_try(void (*body)(void*), void* state) {
 }
 
 void exarmo_capi_panic(void) {
-  jmp_buf* target = exarmo_guard;
+  ExarmoJump* target = exarmo_guard;
   if (target == NULL) abort();
-  longjmp(*target, 1);
+  DISASSEMBLER_LONGJMP(*target);
 }
 
 uint32_t disassembler_exarmo_guard_probe(bool fail);
