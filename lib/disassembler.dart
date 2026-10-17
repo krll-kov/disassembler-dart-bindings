@@ -667,43 +667,55 @@ final class DecodedBatch {
 
   List<int>? registersWritten(int index) {
     if (!hasRegisterAccess(index)) return null;
-    final int start =
-        ((_word(index, 6) >> 32) & 0xffffffff) + (_word(index, 7) & 0xffff);
-    final int count = (_word(index, 7) >> 16) & 0xffff;
+    final int start = registersWrittenStart(index);
+    final int count = registersWrittenCount(index);
     return Uint32List.sublistView(_registers, start, start + count);
   }
 
-  @pragma('vm:prefer-inline')
-  int _operand(int index, int operand, int field) {
+  /// The ids of every register access of the batch, which
+  /// [registersWrittenStart] and [registersWrittenCount] index
+  Uint32List get registerIds => _registers;
+
+  int registersWrittenStart(int index) =>
+      ((_word(index, 6) >> 32) & 0xffffffff) + (_word(index, 7) & 0xffff);
+
+  int registersWrittenCount(int index) => (_word(index, 7) >> 16) & 0xffff;
+
+  /// The row of operand [operand] of instruction [index] for the `At`
+  /// accessors: a column copy reads 15 fields of one operand, and each
+  /// indexed accessor repeats the two bound checks and the row computation
+  int operandRow(int index, int operand) {
     final int count = operandCount(index);
     if (operand < 0 || operand >= count)
       throw IndexError.withLength(operand, count, name: 'operand');
     final int base = (_word(index, 6) & 0xffffffff) + operand;
-    return _operands[base * native.DISASSEMBLER_OPERAND_STRIDE + field];
+    return base * native.DISASSEMBLER_OPERAND_STRIDE;
   }
+
+  @pragma('vm:prefer-inline')
+  int _operand(int index, int operand, int field) =>
+      _operands[operandRow(index, operand) + field];
 
   OperandKind operandKind(int index, int operand) =>
-      OperandKind.values[_operand(index, operand, 0) & 7];
+      operandKindAt(operandRow(index, operand));
 
-  int? operandAccess(int index, int operand) {
-    final int value = _operand(index, operand, 0);
-    return value & (1 << 3) == 0 ? null : (value >> 4) & 3;
-  }
+  int? operandAccess(int index, int operand) =>
+      operandAccessAt(operandRow(index, operand));
 
   int operandSize(int index, int operand) =>
-      (_operand(index, operand, 0) >> 8) & 0xff;
+      operandSizeAt(operandRow(index, operand));
 
   OperandShift operandShift(int index, int operand) =>
-      OperandShift.values[(_operand(index, operand, 0) >> 16) & 0xf];
+      operandShiftAt(operandRow(index, operand));
 
   OperandExtend operandExtend(int index, int operand) =>
-      OperandExtend.values[(_operand(index, operand, 0) >> 20) & 0xf];
+      operandExtendAt(operandRow(index, operand));
 
   bool operandZeroing(int index, int operand) =>
-      _operand(index, operand, 0) & (1 << 24) != 0;
+      operandZeroingAt(operandRow(index, operand));
 
   int operandBroadcast(int index, int operand) =>
-      (_operand(index, operand, 0) >> 32) & 0xff;
+      operandBroadcastAt(operandRow(index, operand));
 
   int operandVectorElementBits(int index, int operand) =>
       (_operand(index, operand, 0) >> 40) & 0xff;
@@ -711,24 +723,82 @@ final class DecodedBatch {
   int operandVectorLanes(int index, int operand) =>
       (_operand(index, operand, 0) >> 48) & 0xff;
 
-  int operandRegister(int index, int operand) => _operand(index, operand, 1);
+  int operandRegister(int index, int operand) =>
+      operandRegisterAt(operandRow(index, operand));
 
-  int operandImmediate(int index, int operand) => _operand(index, operand, 2);
+  int operandImmediate(int index, int operand) =>
+      operandImmediateAt(operandRow(index, operand));
 
-  int operandShiftValue(int index, int operand) => _operand(index, operand, 7);
+  int operandShiftValue(int index, int operand) =>
+      operandShiftValueAt(operandRow(index, operand));
 
-  int memoryBase(int index, int operand) => _operand(index, operand, 3);
+  int memoryBase(int index, int operand) =>
+      memoryBaseAt(operandRow(index, operand));
 
-  int memoryIndex(int index, int operand) => _operand(index, operand, 4);
+  int memoryIndex(int index, int operand) =>
+      memoryIndexAt(operandRow(index, operand));
 
-  int memorySegment(int index, int operand) => _operand(index, operand, 5);
+  int memorySegment(int index, int operand) =>
+      memorySegmentAt(operandRow(index, operand));
 
-  int memoryScale(int index, int operand) => _operand(index, operand, 0) >> 56;
+  int memoryScale(int index, int operand) =>
+      memoryScaleAt(operandRow(index, operand));
 
-  int memoryDisplacement(int index, int operand) => _operand(index, operand, 6);
+  int memoryDisplacement(int index, int operand) =>
+      memoryDisplacementAt(operandRow(index, operand));
 
   bool memoryAbsolute(int index, int operand) =>
       _operand(index, operand, 0) & (1 << 25) != 0;
+
+  @pragma('vm:prefer-inline')
+  OperandKind operandKindAt(int row) => OperandKind.values[_operands[row] & 7];
+
+  @pragma('vm:prefer-inline')
+  int? operandAccessAt(int row) {
+    final int value = _operands[row];
+    return value & (1 << 3) == 0 ? null : (value >> 4) & 3;
+  }
+
+  @pragma('vm:prefer-inline')
+  int operandSizeAt(int row) => (_operands[row] >> 8) & 0xff;
+
+  @pragma('vm:prefer-inline')
+  OperandShift operandShiftAt(int row) =>
+      OperandShift.values[(_operands[row] >> 16) & 0xf];
+
+  @pragma('vm:prefer-inline')
+  OperandExtend operandExtendAt(int row) =>
+      OperandExtend.values[(_operands[row] >> 20) & 0xf];
+
+  @pragma('vm:prefer-inline')
+  bool operandZeroingAt(int row) => _operands[row] & (1 << 24) != 0;
+
+  @pragma('vm:prefer-inline')
+  int operandBroadcastAt(int row) => (_operands[row] >> 32) & 0xff;
+
+  @pragma('vm:prefer-inline')
+  int operandRegisterAt(int row) => _operands[row + 1];
+
+  @pragma('vm:prefer-inline')
+  int operandImmediateAt(int row) => _operands[row + 2];
+
+  @pragma('vm:prefer-inline')
+  int operandShiftValueAt(int row) => _operands[row + 7];
+
+  @pragma('vm:prefer-inline')
+  int memoryBaseAt(int row) => _operands[row + 3];
+
+  @pragma('vm:prefer-inline')
+  int memoryIndexAt(int row) => _operands[row + 4];
+
+  @pragma('vm:prefer-inline')
+  int memorySegmentAt(int row) => _operands[row + 5];
+
+  @pragma('vm:prefer-inline')
+  int memoryScaleAt(int row) => _operands[row] >> 56;
+
+  @pragma('vm:prefer-inline')
+  int memoryDisplacementAt(int row) => _operands[row + 6];
 
   Operand operand(int index, int operand) {
     final OperandKind kind = operandKind(index, operand);
