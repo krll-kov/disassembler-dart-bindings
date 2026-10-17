@@ -174,7 +174,14 @@ CLibrary capstoneLibrary(Uri root, OS targetOS, {Object? decoders}) {
     includes: configuration.includes,
     defines: configuration.defines,
     std: targetOS == OS.windows ? 'c11' : 'c99',
-    flags: [if (targetOS == OS.windows) '/MD'],
+    flags: [
+      if (targetOS == OS.windows) '/MD',
+      // native_toolchain_c passes its linker flags, -Wl,-z,max-page-size on
+      // Android and -Wl,-encryptable on macOS and iOS, to every compile step
+      // too, and clang warned about the unused input once per source file
+      if (targetOS == OS.android || targetOS == OS.iOS || targetOS == OS.macOS)
+        '-Wno-unused-command-line-argument',
+    ],
   );
 }
 
@@ -262,7 +269,14 @@ CLibrary disassemblerLibrary(
     libraryDirectories: [
       if (exarmoArchive != null) exarmoArchive.resolve('.').toFilePath(),
     ],
-    flags: [if (targetOS == OS.windows) '/MD'],
+    flags: [
+      if (targetOS == OS.windows) '/MD',
+      // native_toolchain_c passes its linker flags, -Wl,-z,max-page-size on
+      // Android and -Wl,-encryptable on macOS and iOS, to every compile step
+      // too, and clang warned about the unused input once per source file
+      if (targetOS == OS.android || targetOS == OS.iOS || targetOS == OS.macOS)
+        '-Wno-unused-command-line-argument',
+    ],
     std: 'c11',
     pic: true,
   );
