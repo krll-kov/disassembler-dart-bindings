@@ -118,7 +118,11 @@ Future<_Cargo?> _rustupCargo(
 }
 
 Future<_Cargo> _findCargo(Uri root, Uri outputDirectory, String target) async {
-  if (await _runs('cargo', const {})) {
+  // Homebrew installs cargo without rustup and with the host target only, and
+  // an Android build on such a machine failed with "can't find crate for core".
+  // A cross build takes a rustup toolchain, the private one if no other exists
+  final bool cross = target != _rustupInit[Abi.current()]?.triple;
+  if (!cross && await _runs('cargo', const {})) {
     return (
       cargo: 'cargo',
       rustup: await _runs('rustup', const {}) ? 'rustup' : null,
@@ -139,7 +143,9 @@ Future<_Cargo> _findCargo(Uri root, Uri outputDirectory, String target) async {
     final _Cargo? cargo = await _rustupCargo(rustup, root, const {});
     if (cargo != null) return cargo;
   }
-  if (bin != null && await _runs('${bin}cargo$_executable', const {})) {
+  if (!cross &&
+      bin != null &&
+      await _runs('${bin}cargo$_executable', const {})) {
     return (
       cargo: '${bin}cargo$_executable',
       rustup: null,
