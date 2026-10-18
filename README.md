@@ -81,7 +81,9 @@ void main() {
 }
 ```
 
-The common API decodes `x86`, `x64`, `arm`, `thumb` and `arm64`. An instruction has operands, control flow and, where the engine reports it, register access. Relative branch targets are absolute addresses. Register IDs differ between engines, so convert them with `registerName` and `registerId`. Register access is `null` where the engine has none, which includes every exarmo instruction.
+The common API decodes `x86`, `x64`, `arm`, `thumb` and `arm64`. An instruction has operands, control flow and, where the engine reports it, register access. Relative branch targets are absolute addresses. Register IDs differ between engines, so convert them with `registerName` and `registerId`. Register access is `null` where the engine has none. Zydis reports it for every instruction. exarmo has no register access of its own, so the package reads the registers each A64 encoding writes and whether each operand is read or written from `src/aarch64_effects.h`, a table generated from the ASL of Arm's A64 ISA XML (FAT-2026-06); 3622 of 4746 encodings are in the table, and SME writes to ZA, SVE writes to register ranges, MOPS, `eret`, `msr` of SM and the 81 encodings added in 2026-09 return `null`. Capstone reports it through `cs_regs_access`.
+
+A panic inside exarmo returns to C by `longjmp` and decodes as an invalid instruction, so a malformed word never terminates the process; `test/exarmo_guard_test.dart` checks 2000 panics on 4 threads.
 
 With `postIndex == true` the memory access uses the base before its update. The update stays where the engine puts it: in the memory displacement or in a separate immediate operand.
 
@@ -91,7 +93,7 @@ Invalid input gives `valid == false` and decoding continues. A successful decode
 
 ## Batch decoding
 
-`decode` creates an object per instruction. For large inputs use `DisassemblerBuffer`, `decoder.reader(buffer)` and `DecodedBatch`: one native call writes instructions, operands and register lists into the batch's arrays, and you read fields by index, such as `batch.address(i)`, `batch.canonicalMnemonic(i)`, `batch.operandImmediate(i, k)` and `batch.registersWritten(i)`.
+`decode` creates an object per instruction. For large inputs use `DisassemblerBuffer`, `decoder.reader(buffer)` and `DecodedBatch`: one native call writes instructions, operands and register lists into the batch's arrays, and you read fields by index, such as `batch.address(i)`, `batch.canonicalMnemonic(i)`, `batch.operandImmediate(i, k)` and `batch.registersWritten(i)`. Each indexed operand accessor repeats two bound checks and the row computation, so a loop that reads several fields of one operand takes `batch.operandRow(i, k)` once and reads through the `At` accessors, `batch.operandKindAt(row)`, `batch.operandRegisterAt(row)`, `batch.memoryDisplacementAt(row)` and the rest. `batch.registersWritten(i)` allocates a list; `batch.registerIds` with `batch.registersWrittenStart(i)` and `batch.registersWrittenCount(i)` reads the same ids in place.
 
 ```dart
 final buffer = DisassemblerBuffer(bytes);
@@ -114,6 +116,8 @@ try {
 `reader.decode(batch, start: ..., end: ..., address: ...)` fills the batch once and returns the instruction count, and `start + batch.consumed` is the next offset. `address` is the address of the byte at `start`. `reader.visit` repeats `decode` up to `end` and stops when the callback returns `false`. Both take `stopAfter`, a set of `ControlFlow` values, and `stopAfterInvalid`, and stop after the first instruction that matches, so a basic block costs no decoding after its branch. Thumb IT state is kept between `decode` calls only with `resume: true`, and `visit` passes it between its own batches.
 
 The next decode overwrites the batch, so copy an instruction with `batch.instruction(i)` to keep it. Close the reader before its buffer. Instructions from `decoder.decode` stay valid after `decoder.close()`.
+
+`reader.callTargets(start: ..., end: ..., address: ...)` returns the targets of direct calls in a linear decode of the range, in order, from one native call that fills no batch. It returns `null` for Capstone and for 32-bit ARM, where `decode` gives the same calls.
 
 ## Known engine gaps
 
@@ -155,6 +159,8 @@ dart test --concurrency=2
 ```
 
 The scripts replace the vendored sources and regenerate the bindings and models, and they need Git and LLVM with libclang. Review the diff and run the tests on your target platforms before releasing an update.
+
+`update_exarmo.dart` applies `tool/exarmo.patch` to the staged sources before it replaces `third_party/exarmo`: the upstream C API links std for `catch_unwind`, which adds `LoadLibraryA` and `NtWriteFile` imports to the native library, so the package builds it without std. The update stops when the patch does not fit the new tag. After an exarmo update, regenerate `src/aarch64_effects.h` with `dart tool/generate_exarmo_effects.dart <ISA_A64_xml directory>`, where the directory is the unpacked A64 ISA XML from Arm's machine-readable architecture specification; the table is keyed by `EXARMO_AARCH64_ENC_` names, so `src/batch.c` does not compile against the table of another exarmo version. `--check` compares the checked-in table with the XML and changes nothing. Run it with `dart`, not `dart run`, since `dart run` builds the native library first.
 
 To compile for Android ARM64 without running anything:
 
