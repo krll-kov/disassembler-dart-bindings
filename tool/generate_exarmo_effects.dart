@@ -42,23 +42,31 @@ void generateExarmoEffects(Uri root, Directory isa, {bool check = false}) {
   final Map<String, EncodingEffect> effects = {};
   final Map<String, Set<String>> mnemonics = {};
   final Map<String, String> aliases = {};
+  final Map<String, Pattern> patterns = {};
   for (final FileSystemEntity entity in isa.listSync()..sort(_byPath)) {
     if (entity is! File || !entity.path.endsWith('.xml')) continue;
     final XmlDocument document = XmlDocument.parse(entity.readAsStringSync());
     final XmlElement? section = document.getElement('instructionsection');
     if (section == null) continue;
-    asl.readInstruction(section, effects, mnemonics, aliases);
+    asl.readInstruction(section, effects, mnemonics, aliases, patterns);
   }
   final ExarmoEncodings exarmo = ExarmoEncodings.read(
     File.fromUri(
       root.resolve('third_party/exarmo/aarch64/src/generated/encoding.rs'),
     ),
   );
-  final List<EncodingEffect?> table = [
+  final List<String?> matched = [
     for (int i = 0; i < exarmo.names.length; i++)
       _match(exarmo.names[i], exarmo.mnemonics[i], effects, mnemonics, aliases),
   ];
-  final String generated = _header(_release(isa), exarmo.names, table);
+  final List<EncodingEffect?> table = [
+    for (final String? name in matched)
+      if (name == null) null else _knownEffect(effects[aliases[name] ?? name]),
+  ];
+  final List<Pattern?> fixed = [
+    for (final String? name in matched) name == null ? null : patterns[name],
+  ];
+  final String generated = _header(_release(isa), exarmo.names, table, fixed);
   final File destination = File.fromUri(root.resolve('src/aarch64_effects.h'));
   if (check) {
     if (!destination.existsSync() ||
@@ -68,8 +76,19 @@ void generateExarmoEffects(Uri root, Directory isa, {bool check = false}) {
     destination.writeAsStringSync(generated);
   }
   final int known = table.whereType<EncodingEffect>().length;
-  stdout.writeln('$known of ${table.length} exarmo A64 encodings known');
+  final int fixedCount = fixed.whereType<Pattern>().length;
+  stdout.writeln(
+    '$known of ${table.length} exarmo A64 encodings known, '
+    '$fixedCount with fixed bits',
+  );
 }
+
+/// The bits an encoding fixes: `word & mask == value` for every instruction
+/// of the encoding.
+typedef Pattern = ({int mask, int value});
+
+EncodingEffect? _knownEffect(EncodingEffect? effect) =>
+    effect != null && effect.known ? effect : null;
 
 int _byPath(FileSystemEntity a, FileSystemEntity b) => a.path.compareTo(b.path);
 
@@ -87,7 +106,7 @@ String exarmoName(String xmlName) => [
 // exarmo splits some XML encodings by a bit the ASL reads, such as
 // `AddhnAsimddiffN2` for ADDHN2, so the longest XML name that starts the
 // exarmo name is that encoding, when the mnemonics agree
-EncodingEffect? _match(
+String? _match(
   String name,
   String mnemonic,
   Map<String, EncodingEffect> effects,
@@ -106,8 +125,7 @@ EncodingEffect? _match(
     }
   }
   if (found == null || !mnemonics[found]!.contains(mnemonic)) return null;
-  final EncodingEffect? effect = effects[aliases[found] ?? found];
-  return effect != null && effect.known ? effect : null;
+  return found;
 }
 
 /// A register write: a field of the instruction word, or a fixed register.
@@ -179,6 +197,7 @@ String _header(
   String release,
   List<String> names,
   List<EncodingEffect?> table,
+  List<Pattern?> fixed,
 ) {
   final StringBuffer out = StringBuffer()
     ..writeln('// Copyright (c) 2026, swiftsoft')
@@ -247,7 +266,35 @@ String _header(
   out
     ..writeln('};')
     ..writeln()
+    ..write(_patternTable(names, fixed))
+    ..writeln()
     ..writeln('#endif  // DISASSEMBLER_AARCH64_EFFECTS_H_');
+  return out.toString();
+}
+
+// An encoding exarmo splits by a bit the ASL reads keeps the pattern of the
+// XML encoding, so its mask admits both halves and the decode tells them apart
+String _patternTable(List<String> names, List<Pattern?> fixed) {
+  final StringBuffer out = StringBuffer()
+    ..writeln('typedef struct Aarch64Pattern {')
+    ..writeln('  uint32_t mask;')
+    ..writeln('  uint32_t value;')
+    ..writeln('} Aarch64Pattern;')
+    ..writeln()
+    ..writeln(
+      'static const Aarch64Pattern '
+      'kAarch64Patterns[EXARMO_AARCH64_ENCODING_COUNT] = {',
+    );
+  String hex(int bits) => '0x${bits.toRadixString(16).padLeft(8, '0')}u';
+  for (int i = 0; i < fixed.length; i++) {
+    final Pattern? pattern = fixed[i];
+    if (pattern == null || pattern.mask == 0) continue;
+    out.writeln(
+      '    [EXARMO_AARCH64_ENC_${names[i]}] = '
+      '{${hex(pattern.mask)}, ${hex(pattern.value)}},',
+    );
+  }
+  out.writeln('};');
   return out.toString();
 }
 
@@ -708,6 +755,7 @@ final class Asl {
     Map<String, EncodingEffect> effects,
     Map<String, Set<String>> mnemonics,
     Map<String, String> aliases,
+    Map<String, Pattern> patterns,
   ) {
     final bool alias = section.findAllElements('aliasto').isNotEmpty;
     final List<List<Statement>> execute = _sections(section, 'execute');
@@ -724,6 +772,7 @@ final class Asl {
           mnemonic,
           if (RegExp(r'^\w+\{2\}').hasMatch(template)) '${mnemonic}2',
         };
+        patterns[name] = _pattern(iclass, encoding);
         if (alias) {
           // The first link of the equivalent template is its mnemonic, which
           // names the encoding; later links name operands such as `Pd`
@@ -791,6 +840,29 @@ final class Asl {
       );
     }
     return fields;
+  }
+
+  /// The bits the page of [encoding] fixes to 0 or 1, the unnamed opcode
+  /// boxes that [_fields] leaves out included.
+  static Pattern _pattern(XmlElement iclass, XmlElement encoding) {
+    int mask = 0;
+    int value = 0;
+    void fix(XmlElement box) {
+      final int hibit = int.parse(box.getAttribute('hibit')!);
+      final int width = int.parse(box.getAttribute('width') ?? '1');
+      final List<bool?> bits = _cells(box, width);
+      for (int i = 0; i < width; i++) {
+        final bool? bit = bits[i];
+        if (bit == null) continue;
+        final int at = 1 << (hibit - i);
+        mask |= at;
+        value = bit ? value | at : value & ~at;
+      }
+    }
+
+    iclass.getElement('regdiagram')!.findElements('box').forEach(fix);
+    encoding.findElements('box').forEach(fix);
+    return (mask: mask, value: value);
   }
 
   // `!= 11111` and the should-be bits `(0)` leave a bit open, since an

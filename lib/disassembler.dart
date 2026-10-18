@@ -221,8 +221,11 @@ final class Disassembler {
   final DisassemblerBackend backend;
   final _Backend _backend;
   final Pointer<Void> _context;
+  static final Uint8List _noIds = Uint8List(1);
+
   bool _closed = false;
   bool _active = false;
+  DecodeSelection? _selection;
 
   factory Disassembler(
     DisassemblerArch architecture, {
@@ -290,6 +293,31 @@ final class Disassembler {
     return _backend.registerId(name);
   }
 
+  // The native side keeps one selection per decoder, so readers of one
+  // decoder re-apply it only when another selection object comes in
+  void _select(DecodeSelection? selection) {
+    if (identical(selection, _selection)) return;
+    final Uint8List ids = selection == null || selection._idBits.isEmpty
+        ? _noIds
+        : selection._idBits;
+    final int status = _selectInPlace(
+      _context,
+      selection?._flowBits ?? 0,
+      ids.address,
+      selection?._idBits.length ?? 0,
+      selection?.skipOthers ?? false ? 1 : 0,
+    );
+    if (status == native.DISASSEMBLER_STATUS_UNSUPPORTED) {
+      throw UnsupportedError(
+        '${backend.name} on ${architecture.name} decodes without a selection',
+      );
+    }
+    if (status != native.DISASSEMBLER_STATUS_OK) {
+      throw StateError('Selection failed with status $status');
+    }
+    _selection = selection;
+  }
+
   void close() {
     if (_active) throw StateError('Cannot close disassembler during decoding');
     if (_closed) return;
@@ -353,6 +381,95 @@ external int _callTargetsInPlace(
   Pointer<Int64> consumed,
 );
 
+/// `disassembler_select` of `src/disassembler.h` taking the id bits in place.
+@Native<Int32 Function(Pointer<Void>, Uint32, Pointer<Uint8>, Int64, Int32)>(
+  symbol: 'disassembler_select',
+  isLeaf: true,
+)
+external int _selectInPlace(
+  Pointer<Void> context,
+  int flows,
+  Pointer<Uint8> ids,
+  int idBytes,
+  int skipOthers,
+);
+
+/// The instructions a decode gives operands and register access, by control
+/// flow or by engine id as `batch.id(i)` returns it; the rest answer
+/// `batch.brief(i)` with true or, with [skipOthers], stay out of the batch
+final class DecodeSelection {
+  static const int _maxIds = 8192;
+
+  final Set<ControlFlow> flows;
+  final Set<int> ids;
+  final bool skipOthers;
+  final int _flowBits;
+  final Uint8List _idBits;
+
+  DecodeSelection({
+    Set<ControlFlow> flows = const {},
+    Set<int> ids = const {},
+    this.skipOthers = false,
+  }) : flows = Set.unmodifiable(flows),
+       ids = Set.unmodifiable(ids),
+       _flowBits = _flowStopBits(flows),
+       _idBits = _bitset(ids) {
+    if (this.flows.isEmpty && this.ids.isEmpty) {
+      throw ArgumentError('A selection needs a flow or an id');
+    }
+  }
+
+  /// The bits every instruction of exarmo A64 encoding [id] has, as `word &
+  /// mask == value`, which a skipping selection tests before it decodes a
+  /// word; null for the encodings Arm's ISA XML of the table does not have
+  static ({int mask, int value})? arm64Pattern(int id) {
+    final Pointer<Uint32> fields = calloc<Uint32>(2);
+    try {
+      final int status = native.disassembler_exarmo_pattern(
+        id,
+        fields,
+        fields + 1,
+      );
+      if (status == native.DISASSEMBLER_STATUS_UNSUPPORTED) {
+        throw UnsupportedError('exarmo ARM64 is not built');
+      }
+      if (status != native.DISASSEMBLER_STATUS_OK) return null;
+      return (mask: fields[0], value: fields[1]);
+    } finally {
+      calloc.free(fields);
+    }
+  }
+
+  static Uint8List _bitset(Set<int> ids) {
+    int last = -1;
+    for (final int id in ids) {
+      if (id < 0 || id >= _maxIds) {
+        throw RangeError.range(id, 0, _maxIds - 1, 'ids');
+      }
+      if (id > last) last = id;
+    }
+    final Uint8List bits = Uint8List(last < 0 ? 0 : (last >> 3) + 1);
+    for (final int id in ids) {
+      bits[id >> 3] |= 1 << (id & 7);
+    }
+    return bits;
+  }
+}
+
+int _flowStopBits(Set<ControlFlow> flows) {
+  int bits = 0;
+  for (final ControlFlow flow in flows) {
+    bits |= switch (flow) {
+      ControlFlow.jump => native.DISASSEMBLER_STOP_JUMP,
+      ControlFlow.call => native.DISASSEMBLER_STOP_CALL,
+      ControlFlow.return_ => native.DISASSEMBLER_STOP_RETURN,
+      ControlFlow.interrupt => native.DISASSEMBLER_STOP_INTERRUPT,
+      ControlFlow.none => 0,
+    };
+  }
+  return bits;
+}
+
 final class DisassemblerReader {
   static const int _callTargetCapacity = 4096;
 
@@ -374,22 +491,17 @@ final class DisassemblerReader {
     Set<ControlFlow> stopAfter = const {},
     bool stopAfterInvalid = false,
     bool resume = false,
+    DecodeSelection? select,
   }) {
     _engine._ensureOpen();
     if (_closed) throw StateError('Disassembler reader is closed');
     if (batch._closed) throw StateError('Decoded batch is closed');
     final int stop = RangeError.checkValidRange(start, end, _buffer.length);
     final Uint8List bytes = Uint8List.sublistView(_buffer._bytes, start, stop);
-    int flags = stopAfterInvalid ? native.DISASSEMBLER_STOP_INVALID : 0;
-    for (final ControlFlow flow in stopAfter) {
-      flags |= switch (flow) {
-        ControlFlow.jump => native.DISASSEMBLER_STOP_JUMP,
-        ControlFlow.call => native.DISASSEMBLER_STOP_CALL,
-        ControlFlow.return_ => native.DISASSEMBLER_STOP_RETURN,
-        ControlFlow.interrupt => native.DISASSEMBLER_STOP_INTERRUPT,
-        ControlFlow.none => 0,
-      };
-    }
+    final int flags =
+        _flowStopBits(stopAfter) |
+        (stopAfterInvalid ? native.DISASSEMBLER_STOP_INVALID : 0);
+    _engine._select(select);
     final int status = _decodeInPlace(
       _engine._context,
       bytes.address,
@@ -452,6 +564,7 @@ final class DisassemblerReader {
     int address = 0,
     Set<ControlFlow> stopAfter = const {},
     bool stopAfterInvalid = false,
+    DecodeSelection? select,
   }) {
     _engine._ensureOpen();
     if (_closed) throw StateError('Disassembler reader is closed');
@@ -472,6 +585,7 @@ final class DisassemblerReader {
           stopAfter: stopAfter,
           stopAfterInvalid: stopAfterInvalid,
           resume: resume,
+          select: select,
         );
         resume = true;
         if (batch.length == 0) break;
@@ -620,6 +734,10 @@ final class DecodedBatch {
   }
 
   bool hasRegisterAccess(int index) => _word(index, 2) & (1 << 10) != 0;
+
+  /// Whether a [DecodeSelection] left this instruction without operands,
+  /// register access and condition code
+  bool brief(int index) => _word(index, 2) & (1 << 11) != 0;
 
   int id(int index) => _word(index, 3);
 

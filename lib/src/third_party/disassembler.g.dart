@@ -14,6 +14,28 @@ import 'package:meta/meta.dart' as meta;
 external int disassembler_backend_mask();
 
 @meta.RecordUse()
+@ffi.Native<
+  ffi.Int64 Function(
+    ffi.Pointer<ffi.Void>,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int64,
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Int64,
+    ffi.Pointer<ffi.Int64>,
+  )
+>()
+external int disassembler_call_targets(
+  ffi.Pointer<ffi.Void> context,
+  ffi.Pointer<ffi.Uint8> bytes,
+  int length,
+  int address,
+  ffi.Pointer<ffi.Uint64> targets,
+  int capacity,
+  ffi.Pointer<ffi.Int64> consumed,
+);
+
+@meta.RecordUse()
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
 external void disassembler_close(ffi.Pointer<ffi.Void> context);
 
@@ -46,6 +68,20 @@ external int disassembler_decode(
 external int disassembler_exarmo_decoder_mask();
 
 @meta.RecordUse()
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Int32,
+    ffi.Pointer<ffi.Uint32>,
+    ffi.Pointer<ffi.Uint32>,
+  )
+>()
+external int disassembler_exarmo_pattern(
+  int encoding,
+  ffi.Pointer<ffi.Uint32> mask,
+  ffi.Pointer<ffi.Uint32> value,
+);
+
+@meta.RecordUse()
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>, ffi.Int64)>()
 external ffi.Pointer<ffi.Char> disassembler_mnemonic(
   ffi.Pointer<ffi.Void> context,
@@ -55,6 +91,24 @@ external ffi.Pointer<ffi.Char> disassembler_mnemonic(
 @meta.RecordUse()
 @ffi.Native<ffi.Pointer<ffi.Void> Function(ffi.Int32, ffi.Int32)>()
 external ffi.Pointer<ffi.Void> disassembler_open(int backend, int architecture);
+
+@meta.RecordUse()
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Void>,
+    ffi.Uint32,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int64,
+    ffi.Int32,
+  )
+>()
+external int disassembler_select(
+  ffi.Pointer<ffi.Void> context,
+  int flows,
+  ffi.Pointer<ffi.Uint8> ids,
+  int id_bytes,
+  int skip_others,
+);
 
 @meta.RecordUse()
 @ffi.Native<ffi.UnsignedInt Function()>()

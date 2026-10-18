@@ -60,6 +60,7 @@ Future<void> main(List<String> args) async {
       symbols.addAll(const [
         'disassembler_decode',
         'disassembler_call_targets',
+        'disassembler_select',
       ]);
     }
     if (symbols != null && configuration.backends.contains('exarmo')) {

@@ -6,10 +6,13 @@
 /// Mapping from Dart function name to native symbol name.
 const recordUseMapping = {
   'disassembler_backend_mask': 'disassembler_backend_mask',
+  'disassembler_call_targets': 'disassembler_call_targets',
   'disassembler_close': 'disassembler_close',
   'disassembler_decode': 'disassembler_decode',
   'disassembler_exarmo_decoder_mask': 'disassembler_exarmo_decoder_mask',
+  'disassembler_exarmo_pattern': 'disassembler_exarmo_pattern',
   'disassembler_mnemonic': 'disassembler_mnemonic',
   'disassembler_open': 'disassembler_open',
+  'disassembler_select': 'disassembler_select',
   'disassembler_zydis_feature_mask': 'disassembler_zydis_feature_mask',
 };

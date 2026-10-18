@@ -119,6 +119,22 @@ The next decode overwrites the batch, so copy an instruction with `batch.instruc
 
 `reader.callTargets(start: ..., end: ..., address: ...)` returns the targets of direct calls in a linear decode of the range, in order, from one native call that fills no batch. It returns `null` for Capstone and for 32-bit ARM, where `decode` gives the same calls.
 
+## Selective decoding
+
+`DecodeSelection` limits operand and register decoding to the instructions a reader uses: those whose `ControlFlow` is in `flows` or whose engine id, as `batch.id(i)` returns it, is in `ids`. Zydis ids are `ZydisMnemonic` values from `zydis_native.dart` and exarmo ARM64 ids are `exarmo_aarch64_encoding` values from `exarmo_native.dart`. Pass it as `select:` to `reader.decode` or `reader.visit`. The other instructions are written with address, size, id, mnemonics and flow but no operands, register access or condition code, and `batch.brief(i)` is true for them. With `skipOthers: true` they are not written at all, `consumed` still covers their bytes, and an instruction that a `stopAfter` flow ends the decode on is written in any case, so `batch.stopped` keeps working. Capstone and 32-bit ARM throw `UnsupportedError` on a selection.
+
+Zydis decodes the instruction first and its operands only for a selected one. exarmo ARM64 does the same, and with `skipOthers` it tests every word against the fixed bits of the selected encodings before it decodes any, from a table generated out of Arm's A64 ISA XML into `src/aarch64_effects.h`: 4665 of 4746 encodings have a pattern and `DecodeSelection.arm64Pattern(id)` returns its mask and value. A selection by flow covers every encoding whose probe word branches and the 28 encodings whose probe words are all unallocated. The 81 encodings added in 2026-09 have no pattern, so a selection by one of their ids decodes every word and a selection by flow does not reach them. `stopAfterInvalid` also decodes every word, since a skipped word is never found invalid.
+
+Linear decode of the executable section, best of 5, Apple M4 Max, ns per instruction. The id sets are 66 ARM64 encodings that match 61% of the words and 29 x86 mnemonics that match 85% of the instructions.
+
+| Decode | ntdll ARM64, 777 K | vk_swiftshader ARM64, 3.6 M | OwHelper x64, 4.6 M |
+| --- | --- | --- | --- |
+| full batch | 85 | 89 | 68 |
+| brief, calls selected | 47 | 48 | 39 |
+| brief, calls and the id set | 71 | 80 | 65 |
+| skipping, calls selected | 4.3 | 6.4 | 38 |
+| skipping, calls and the id set | 60 | 75 | 65 |
+
 ## Known engine gaps
 
 Capstone 6.0.0-Alpha11 reports `access = 0` and `avx_bcast = 0` for the masked broadcast `VADDPS` bytes `62 f1 5c db 58 10`, and no groups for the `VXORPS` bytes `62 f1 7c c9 57 c0`. The package passes these values through unchanged.

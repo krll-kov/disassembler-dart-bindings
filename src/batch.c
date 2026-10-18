@@ -84,6 +84,7 @@ enum {
   kFlagWritesFlagsKnown = 1 << 8,
   kFlagWritesFlags = 1 << 9,
   kFlagRegisterAccess = 1 << 10,
+  kFlagBrief = 1 << 11,
 };
 
 #define kConditionMnemonic 31
@@ -126,7 +127,40 @@ typedef struct Context {
 #if defined(DISASSEMBLER_EXARMO_ARM)
   exarmo_aarch32_it_state it;
 #endif
+  struct Selection* selection;
 } Context;
+
+enum { kSelectionIdBytes = 1024, kFlowBits = 0xf };
+
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+enum { kBucketShift = 21, kBuckets = 1 << (32 - kBucketShift) };
+
+// Words are bucketed by their top 11 bits, since nearly every A64 encoding
+// fixes op0 in bits 28 to 25, so a bucket holds the few patterns left to test
+typedef struct Arm64Prefilter {
+  bool built;
+  bool usable;
+  uint32_t flows;
+  uint32_t* start;
+  uint16_t* members;
+} Arm64Prefilter;
+#endif
+
+typedef struct Selection {
+  bool skip_others;
+  uint32_t flows;
+  uint8_t ids[kSelectionIdBytes];
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  bool probed;
+  uint8_t flow_of[EXARMO_AARCH64_ENCODING_COUNT];
+  Arm64Prefilter prefilter;
+#endif
+} Selection;
+
+static bool SelectedId(const Selection* s, int64_t id) {
+  if (id < 0 || id >= kSelectionIdBytes * 8) return false;
+  return (s->ids[id >> 3] >> (id & 7) & 1) != 0;
+}
 
 static void WriteOperand(disassembler_batch* batch, const Operand* o) {
   int64_t* r =
@@ -208,6 +242,18 @@ static bool Stops(uint32_t stop, int flow, bool valid) {
   }
 }
 
+static bool Selected(const Selection* s, int64_t id, int flow) {
+  return s == NULL || SelectedId(s, id) || Stops(s->flows, flow, true);
+}
+
+// An instruction outside the selection whose flow is in `stop` is written
+// even when the others are skipped, so the batch keeps what ended it
+static bool Written(const Selection* s, bool selected, uint32_t stop, int flow,
+                    bool valid) {
+  if (s == NULL || selected || !s->skip_others) return true;
+  return Stops(stop, flow, valid);
+}
+
 static bool HasRoom(const disassembler_batch* batch, int limit, int operands,
                     int registers) {
   return batch->count < limit &&
@@ -270,10 +316,121 @@ static void AddAction(RegisterAction* list, int* count, uint32_t reg,
   (*count)++;
 }
 
+static void ZydisHead(const ZydisDecodedInstruction* ins, Record* r) {
+  r->size = ins->length;
+  r->id = ins->mnemonic;
+  r->mnemonic = ins->mnemonic;
+  r->canonical = ins->mnemonic;
+  r->flow = ZydisFlow(ins);
+  r->flags = kFlagValid;
+  if (ins->meta.category == ZYDIS_CATEGORY_COND_BR) {
+    r->flags |= kFlagConditional;
+    r->condition = kConditionMnemonic;
+  }
+  r->immediate_size = ins->raw.imm[0].size / 8;
+  if (ins->encoding == ZYDIS_INSTRUCTION_ENCODING_VEX ||
+      ins->encoding == ZYDIS_INSTRUCTION_ENCODING_EVEX ||
+      ins->encoding == ZYDIS_INSTRUCTION_ENCODING_XOP ||
+      ins->encoding == ZYDIS_INSTRUCTION_ENCODING_MVEX)
+    r->flags |= kFlagVector;
+}
+
+static void ZydisOperand(const Context* c, const ZydisDecodedInstruction* ins,
+                         const ZydisDecodedOperand* op, uint64_t address,
+                         Operand* o) {
+  memset(o, 0, sizeof(*o));
+  switch (op->type) {
+    case ZYDIS_OPERAND_TYPE_REGISTER: o->kind = kKindRegister; break;
+    case ZYDIS_OPERAND_TYPE_IMMEDIATE: o->kind = kKindImmediate; break;
+    case ZYDIS_OPERAND_TYPE_MEMORY: o->kind = kKindMemory; break;
+    default: o->kind = kKindOther; break;
+  }
+  o->has_access = true;
+  if (op->actions & ZYDIS_OPERAND_ACTION_MASK_READ) o->access |= 1;
+  if (op->actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) o->access |= 2;
+  if (o->kind == kKindImmediate) {
+    int64_t value = op->imm.is_signed ? op->imm.value.s
+                                      : (int64_t)op->imm.value.u;
+    if (op->imm.is_relative) {
+      value += (int64_t)address + ins->length;
+      if (c->architecture == kArchX86) value &= 0xffffffff;
+    }
+    o->immediate = value;
+  }
+  if (o->kind == kKindRegister) o->reg = op->reg.value;
+  o->size = (op->size + 7) / 8;
+  o->zeroing = (o->access & 2) != 0 &&
+               (ins->avx.mask.mode == ZYDIS_MASK_MODE_ZEROING ||
+                ins->avx.mask.mode == ZYDIS_MASK_MODE_CONTROL_ZEROING);
+  if (o->kind == kKindMemory) {
+    o->broadcast = ZydisBroadcast(ins->avx.broadcast.mode);
+    o->base = op->mem.base;
+    o->index = op->mem.index;
+    o->segment = op->mem.segment;
+    o->scale = op->mem.scale;
+    o->displacement = op->mem.disp.has_displacement ? op->mem.disp.value : 0;
+  } else {
+    o->scale = 1;
+  }
+  o->element_bits = op->element_size;
+  o->lanes = op->element_count;
+}
+
+static void ZydisRegisters(const ZydisDecodedInstruction* ins,
+                           const ZydisDecodedOperand* ops, Record* r,
+                           disassembler_batch* batch) {
+  RegisterAction actions[2 * 3 * ZYDIS_MAX_OPERAND_COUNT];
+  int action_count = 0;
+  for (int i = 0; i < ins->operand_count; i++) {
+    const ZydisDecodedOperand* op = &ops[i];
+    if (op->type == ZYDIS_OPERAND_TYPE_REGISTER) {
+      AddAction(actions, &action_count, op->reg.value, op->actions);
+    } else if (op->type == ZYDIS_OPERAND_TYPE_MEMORY) {
+      AddAction(actions, &action_count, op->mem.segment,
+                ZYDIS_OPERAND_ACTION_READ);
+      AddAction(actions, &action_count, op->mem.base,
+                ZYDIS_OPERAND_ACTION_READ);
+      AddAction(actions, &action_count, op->mem.index,
+                ZYDIS_OPERAND_ACTION_READ);
+    }
+  }
+  for (int i = 0; i < action_count; i++) {
+    if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_READ)
+      batch->registers[batch->register_count + r->read_count++] =
+          actions[i].reg;
+  }
+  for (int i = 0; i < action_count; i++) {
+    if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) {
+      batch->registers[batch->register_count + r->read_count +
+                       r->written_count++] = actions[i].reg;
+      if (actions[i].reg == ZYDIS_REGISTER_FLAGS ||
+          actions[i].reg == ZYDIS_REGISTER_EFLAGS ||
+          actions[i].reg == ZYDIS_REGISTER_RFLAGS)
+        r->flags |= kFlagWritesFlags;
+    }
+  }
+  batch->register_count += r->read_count + r->written_count;
+}
+
+static void ZydisFull(const Context* c, const ZydisDecodedInstruction* ins,
+                      const ZydisDecodedOperand* ops, Record* r,
+                      disassembler_batch* batch) {
+  r->flags |= kFlagRegisterAccess | kFlagWritesFlagsKnown;
+  for (int i = 0; i < ins->operand_count_visible; i++) {
+    Operand o;
+    ZydisOperand(c, ins, &ops[i], r->address, &o);
+    WriteOperand(batch, &o);
+    r->operand_count++;
+  }
+  ZydisRegisters(ins, ops, r, batch);
+}
+
 static int32_t DecodeZydis(Context* c, const uint8_t* bytes, int64_t length,
                            uint64_t address, int32_t limit, uint32_t stop,
                            disassembler_batch* batch) {
   const int max_registers = 2 * 3 * ZYDIS_MAX_OPERAND_COUNT;
+  const Selection* s = c->selection;
+  ZydisDecoderContext context;
   ZydisDecodedInstruction ins;
   ZydisDecodedOperand ops[ZYDIS_MAX_OPERAND_COUNT];
   int64_t at = 0;
@@ -282,108 +439,33 @@ static int32_t DecodeZydis(Context* c, const uint8_t* bytes, int64_t length,
     int64_t available = length - at;
     if (available > ZYDIS_MAX_INSTRUCTION_LENGTH)
       available = ZYDIS_MAX_INSTRUCTION_LENGTH;
-    const ZyanStatus status = ZydisDecoderDecodeFull(
-        &c->zydis, bytes + at, (ZyanUSize)available, &ins, ops);
+    ZyanStatus status = ZydisDecoderDecodeInstruction(
+        &c->zydis, &context, bytes + at, (ZyanUSize)available, &ins);
     Record r;
     InitRecord(&r, batch, address + (uint64_t)at);
-    r.status = (uint32_t)status;
+    bool selected = true;
+    if (ZYAN_SUCCESS(status)) {
+      ZydisHead(&ins, &r);
+      selected = Selected(s, r.id, r.flow);
+      if (selected)
+        status = ZydisDecoderDecodeOperands(&c->zydis, &context, &ins, ops,
+                                            ins.operand_count);
+    }
     if (!ZYAN_SUCCESS(status)) {
+      InitRecord(&r, batch, address + (uint64_t)at);
+      r.status = (uint32_t)status;
       r.size = 1;
-      WriteRecord(batch, &r);
+      if (Written(s, false, stop, kFlowNone, false)) WriteRecord(batch, &r);
       at += 1;
       if (Stops(stop, kFlowNone, false)) break;
       continue;
     }
-    r.size = ins.length;
-    r.id = ins.mnemonic;
-    r.mnemonic = ins.mnemonic;
-    r.canonical = ins.mnemonic;
-    r.flow = ZydisFlow(&ins);
-    r.flags = kFlagValid | kFlagRegisterAccess | kFlagWritesFlagsKnown;
-    if (ins.meta.category == ZYDIS_CATEGORY_COND_BR) {
-      r.flags |= kFlagConditional;
-      r.condition = kConditionMnemonic;
-    }
-    r.immediate_size = ins.raw.imm[0].size / 8;
-    if (ins.encoding == ZYDIS_INSTRUCTION_ENCODING_VEX ||
-        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_EVEX ||
-        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_XOP ||
-        ins.encoding == ZYDIS_INSTRUCTION_ENCODING_MVEX)
-      r.flags |= kFlagVector;
-    for (int i = 0; i < ins.operand_count_visible; i++) {
-      const ZydisDecodedOperand* op = &ops[i];
-      Operand o;
-      memset(&o, 0, sizeof(o));
-      switch (op->type) {
-        case ZYDIS_OPERAND_TYPE_REGISTER: o.kind = kKindRegister; break;
-        case ZYDIS_OPERAND_TYPE_IMMEDIATE: o.kind = kKindImmediate; break;
-        case ZYDIS_OPERAND_TYPE_MEMORY: o.kind = kKindMemory; break;
-        default: o.kind = kKindOther; break;
-      }
-      o.has_access = true;
-      if (op->actions & ZYDIS_OPERAND_ACTION_MASK_READ) o.access |= 1;
-      if (op->actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) o.access |= 2;
-      if (o.kind == kKindImmediate) {
-        int64_t value = op->imm.is_signed ? op->imm.value.s
-                                          : (int64_t)op->imm.value.u;
-        if (op->imm.is_relative) {
-          value += (int64_t)r.address + ins.length;
-          if (c->architecture == kArchX86) value &= 0xffffffff;
-        }
-        o.immediate = value;
-      }
-      if (o.kind == kKindRegister) o.reg = op->reg.value;
-      o.size = (op->size + 7) / 8;
-      o.zeroing = (o.access & 2) != 0 &&
-                  (ins.avx.mask.mode == ZYDIS_MASK_MODE_ZEROING ||
-                   ins.avx.mask.mode == ZYDIS_MASK_MODE_CONTROL_ZEROING);
-      if (o.kind == kKindMemory) {
-        o.broadcast = ZydisBroadcast(ins.avx.broadcast.mode);
-        o.base = op->mem.base;
-        o.index = op->mem.index;
-        o.segment = op->mem.segment;
-        o.scale = op->mem.scale;
-        o.displacement = op->mem.disp.has_displacement ? op->mem.disp.value : 0;
-      } else {
-        o.scale = 1;
-      }
-      o.element_bits = op->element_size;
-      o.lanes = op->element_count;
-      WriteOperand(batch, &o);
-      r.operand_count++;
-    }
-    RegisterAction actions[2 * 3 * ZYDIS_MAX_OPERAND_COUNT];
-    int action_count = 0;
-    for (int i = 0; i < ins.operand_count; i++) {
-      const ZydisDecodedOperand* op = &ops[i];
-      if (op->type == ZYDIS_OPERAND_TYPE_REGISTER) {
-        AddAction(actions, &action_count, op->reg.value, op->actions);
-      } else if (op->type == ZYDIS_OPERAND_TYPE_MEMORY) {
-        AddAction(actions, &action_count, op->mem.segment,
-                  ZYDIS_OPERAND_ACTION_READ);
-        AddAction(actions, &action_count, op->mem.base,
-                  ZYDIS_OPERAND_ACTION_READ);
-        AddAction(actions, &action_count, op->mem.index,
-                  ZYDIS_OPERAND_ACTION_READ);
-      }
-    }
-    for (int i = 0; i < action_count; i++) {
-      if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_READ)
-        batch->registers[batch->register_count + r.read_count++] =
-            actions[i].reg;
-    }
-    for (int i = 0; i < action_count; i++) {
-      if (actions[i].actions & ZYDIS_OPERAND_ACTION_MASK_WRITE) {
-        batch->registers[batch->register_count + r.read_count +
-                         r.written_count++] = actions[i].reg;
-        if (actions[i].reg == ZYDIS_REGISTER_FLAGS ||
-            actions[i].reg == ZYDIS_REGISTER_EFLAGS ||
-            actions[i].reg == ZYDIS_REGISTER_RFLAGS)
-          r.flags |= kFlagWritesFlags;
-      }
-    }
-    batch->register_count += r.read_count + r.written_count;
-    WriteRecord(batch, &r);
+    r.status = (uint32_t)status;
+    if (selected)
+      ZydisFull(c, &ins, ops, &r, batch);
+    else
+      r.flags |= kFlagBrief;
+    if (Written(s, selected, stop, r.flow, true)) WriteRecord(batch, &r);
     at += ins.length;
     if (Stops(stop, r.flow, true)) break;
   }
@@ -643,22 +725,257 @@ static int Arm64WrittenIndex(const int64_t* written, int count, int64_t reg) {
   return -1;
 }
 
+static uint32_t Le32(const uint8_t* p) {
+  return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 |
+         (uint32_t)p[3] << 24;
+}
+
+enum { kFlowUnknown = 0xff };
+
+static bool Arm64Probe(uint32_t word, exarmo_aarch64_instruction* ins) {
+  const uint8_t bytes[4] = {(uint8_t)(word & 0xff), (uint8_t)((word >> 8) & 0xff),
+                            (uint8_t)((word >> 16) & 0xff),
+                            (uint8_t)(word >> 24)};
+  return exarmo_aarch64_decode_bytes(bytes, 4, ins) == EXARMO_AARCH64_STATUS_OK;
+}
+
+// exarmo has no table of branch kinds, so the flow of an encoding comes from
+// decoding its fixed bits with the open bits zero, all one or alternating:
+// 388 of 4665 patterns are unallocated with zeros, 28 with all three words
+static void Arm64ProbeFlows(Selection* s) {
+  for (int e = 0; e < EXARMO_AARCH64_ENCODING_COUNT; e++) {
+    s->flow_of[e] = kFlowUnknown;
+    const Aarch64Pattern* p = &kAarch64Patterns[e];
+    if (p->mask == 0) continue;
+    const uint32_t words[3] = {p->value, p->value | ~p->mask,
+                               p->value | (~p->mask & 0x55555555u)};
+    exarmo_aarch64_instruction ins;
+    for (int w = 0; w < 3; w++) {
+      if (!Arm64Probe(words[w], &ins)) continue;
+      const exarmo_aarch64_branch branch =
+          exarmo_aarch64_instruction_branch(&ins, 0);
+      s->flow_of[e] = (uint8_t)ExarmoFlow64(branch.kind);
+      break;
+    }
+  }
+  s->probed = true;
+}
+
+// An encoding whose probe words are all unallocated has no known flow and is
+// tested by its pattern whenever a flow is selected, since it may be a branch;
+// an encoding without a pattern is reached by a flow selection only by its id
+static bool Arm64Wanted(const Selection* s, uint32_t flows, int e) {
+  if (SelectedId(s, e)) return true;
+  if (flows == 0 || kAarch64Patterns[e].mask == 0) return false;
+  return s->flow_of[e] == kFlowUnknown || Stops(flows, s->flow_of[e], true);
+}
+
+static bool Arm64InBucket(const Aarch64Pattern* p, uint32_t bucket) {
+  const uint32_t top = ~0u << kBucketShift;
+  return ((bucket << kBucketShift) & p->mask & top) == (p->value & top);
+}
+
+static void Arm64FreePrefilter(Arm64Prefilter* f) {
+  free(f->start);
+  free(f->members);
+  f->start = NULL;
+  f->members = NULL;
+}
+
+static void Arm64Build(Selection* s, uint32_t flows) {
+  Arm64Prefilter* f = &s->prefilter;
+  Arm64FreePrefilter(f);
+  f->built = true;
+  f->flows = flows;
+  f->usable = false;
+  uint32_t* start = calloc(kBuckets + 1, sizeof(uint32_t));
+  uint32_t* fill = calloc(kBuckets, sizeof(uint32_t));
+  if (start == NULL || fill == NULL) {
+    free(start);
+    free(fill);
+    return;
+  }
+  uint64_t total = 0;
+  for (int e = 0; e < EXARMO_AARCH64_ENCODING_COUNT; e++) {
+    if (!Arm64Wanted(s, flows, e)) continue;
+    if (kAarch64Patterns[e].mask == 0) {
+      free(start);
+      free(fill);
+      return;
+    }
+    for (uint32_t b = 0; b < kBuckets; b++)
+      if (Arm64InBucket(&kAarch64Patterns[e], b)) {
+        start[b + 1]++;
+        total++;
+      }
+  }
+  for (uint32_t b = 1; b <= kBuckets; b++) start[b] += start[b - 1];
+  uint16_t* members = malloc((total + 1) * sizeof(uint16_t));
+  if (members == NULL) {
+    free(start);
+    free(fill);
+    return;
+  }
+  for (int e = 0; e < EXARMO_AARCH64_ENCODING_COUNT; e++) {
+    if (!Arm64Wanted(s, flows, e)) continue;
+    for (uint32_t b = 0; b < kBuckets; b++)
+      if (Arm64InBucket(&kAarch64Patterns[e], b))
+        members[start[b] + fill[b]++] = (uint16_t)e;
+  }
+  free(fill);
+  f->start = start;
+  f->members = members;
+  f->usable = true;
+}
+
+// Skipping by pattern leaves invalid words undecoded, so a stop on invalid
+// input decodes every word instead
+static const Arm64Prefilter* Arm64PrefilterFor(Context* c, uint32_t stop) {
+  Selection* s = c->selection;
+  if (s == NULL || !s->skip_others ||
+      (stop & DISASSEMBLER_STOP_INVALID) != 0)
+    return NULL;
+  const uint32_t flows = (s->flows | stop) & kFlowBits;
+  if (!s->prefilter.built || s->prefilter.flows != flows) Arm64Build(s, flows);
+  return s->prefilter.usable ? &s->prefilter : NULL;
+}
+
+static bool Arm64Candidate(const Arm64Prefilter* f, uint32_t word) {
+  const uint32_t bucket = word >> kBucketShift;
+  for (uint32_t m = f->start[bucket]; m < f->start[bucket + 1]; m++) {
+    const Aarch64Pattern* p = &kAarch64Patterns[f->members[m]];
+    if ((word & p->mask) == p->value) return true;
+  }
+  return false;
+}
+
+typedef struct Arm64Full {
+  exarmo_aarch64_operand ops[EXARMO_AARCH64_MAX_OPERANDS];
+  size_t count;
+  const Aarch64Effect* effect;
+  bool known;
+  int64_t written[kArm64MaxWrites];
+  int written_count;
+  int64_t read[2 * EXARMO_AARCH64_MAX_OPERANDS];
+  int read_count;
+} Arm64Full;
+
+static void Arm64Head(const exarmo_aarch64_instruction* ins, uint64_t pc,
+                      uint8_t size, Record* r) {
+  r->size = size;
+  const int encoding = exarmo_aarch64_instruction_encoding(ins);
+  r->id = encoding;
+  r->mnemonic = exarmo_aarch64_instruction_mnemonic(ins);
+  r->canonical = exarmo_aarch64_encoding_mnemonic(encoding);
+  if (!exarmo_aarch64_instruction_unpredictable(ins)) r->flags |= kFlagValid;
+  const exarmo_aarch64_branch branch =
+      exarmo_aarch64_instruction_branch(ins, pc);
+  r->flow = ExarmoFlow64(branch.kind);
+  if (branch.conditional) r->flags |= kFlagConditional;
+}
+
+static int32_t Arm64Writes(uint32_t word, Arm64Full* f) {
+  const Aarch64Effect* effect = f->effect;
+  for (int k = effect->write_start;
+       k < effect->write_start + effect->write_count; k++) {
+    const int64_t reg = Arm64Written(&kAarch64Writes[k], word);
+    if (reg == 0 || Arm64WrittenIndex(f->written, f->written_count, reg) >= 0)
+      continue;
+    if (f->written_count == kArm64MaxWrites) return DISASSEMBLER_STATUS_FAILED;
+    f->written[f->written_count++] = reg;
+  }
+  return DISASSEMBLER_STATUS_OK;
+}
+
+static void Arm64Operand(const exarmo_aarch64_operand* op, uint64_t pc,
+                         Arm64Full* f, Record* r, disassembler_batch* batch) {
+  if (op->kind == EXARMO_AARCH64_OPERAND_MEM) {
+    if (op->mem.writeback != EXARMO_AARCH64_WRITEBACK_NONE)
+      r->flags |= kFlagWriteback;
+    if (op->mem.writeback == EXARMO_AARCH64_WRITEBACK_POST)
+      r->flags |= kFlagPostIndex;
+  }
+  Operand o;
+  Operand64(op, pc, &o);
+  if (f->known && o.kind == kKindRegister) {
+    o.has_access = true;
+    const int index = Arm64WrittenIndex(f->written, f->written_count, o.reg);
+    o.access = index >= 0 ? 2 : 1;
+    if (index >= 0) f->written[index] = o.reg;
+    if (o.access == 1 && o.reg != 0) f->read[f->read_count++] = o.reg;
+  } else if (f->known && o.kind == kKindMemory) {
+    o.has_access = true;
+    o.access = ((f->effect->flags & kEffectReadsMemory) != 0 ? 1 : 0) |
+               ((f->effect->flags & kEffectWritesMemory) != 0 ? 2 : 0);
+    if (o.base != 0) f->read[f->read_count++] = o.base;
+    if (o.index != 0) f->read[f->read_count++] = o.index;
+  }
+  WriteOperand(batch, &o);
+  r->operand_count++;
+}
+
+static int32_t Arm64Body(const exarmo_aarch64_instruction* ins,
+                         const uint8_t* bytes, uint64_t pc, Record* r,
+                         disassembler_batch* batch) {
+  r->flags |= kFlagWritesFlagsKnown;
+  if (exarmo_aarch64_instruction_flags(ins).writes != 0)
+    r->flags |= kFlagWritesFlags;
+  Arm64Full f;
+  f.count = exarmo_aarch64_instruction_operands(ins, f.ops,
+                                                EXARMO_AARCH64_MAX_OPERANDS);
+  if (f.count > EXARMO_AARCH64_MAX_OPERANDS) return DISASSEMBLER_STATUS_FAILED;
+  static const Aarch64Effect none = {0, 0, 0};
+  f.effect = r->id < EXARMO_AARCH64_ENCODING_COUNT ? &kAarch64Effects[r->id]
+                                                   : &none;
+  f.known = (f.effect->flags & kEffectKnown) != 0;
+  f.written_count = 0;
+  f.read_count = 0;
+  if (f.known) {
+    if (Arm64Writes(Le32(bytes), &f) != DISASSEMBLER_STATUS_OK)
+      return DISASSEMBLER_STATUS_FAILED;
+    r->flags |= kFlagRegisterAccess;
+  }
+  bool has_condition = false;
+  for (size_t i = 0; i < f.count; i++) {
+    const exarmo_aarch64_operand* op = &f.ops[i];
+    if (!has_condition && op->kind == EXARMO_AARCH64_OPERAND_COND) {
+      has_condition = true;
+      r->condition = op->cond < 14 ? op->cond + 1 : 0;
+    }
+    Arm64Operand(op, pc, &f, r, batch);
+  }
+  for (int i = 0; i < f.read_count; i++)
+    batch->registers[batch->register_count + r->read_count++] =
+        (uint32_t)f.read[i];
+  for (int i = 0; i < f.written_count; i++)
+    batch->registers[batch->register_count + r->read_count +
+                     r->written_count++] = (uint32_t)f.written[i];
+  batch->register_count += r->read_count + r->written_count;
+  return DISASSEMBLER_STATUS_OK;
+}
+
 static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
                            uint64_t address, int32_t limit, uint32_t stop,
                            disassembler_batch* batch) {
-  (void)c;
+  const Selection* s = c->selection;
+  const Arm64Prefilter* filter = Arm64PrefilterFor(c, stop);
   exarmo_aarch64_instruction ins;
-  exarmo_aarch64_operand ops[EXARMO_AARCH64_MAX_OPERANDS];
   int64_t at = 0;
   while (at < length && HasRoom(batch, limit, EXARMO_AARCH64_MAX_OPERANDS,
                                 kArm64MaxRegisters)) {
     const uint64_t pc = address + (uint64_t)at;
+    if (filter != NULL && length - at >= 4 &&
+        !Arm64Candidate(filter, Le32(bytes + at))) {
+      at += 4;
+      continue;
+    }
     const exarmo_aarch64_status status =
         exarmo_aarch64_decode_bytes(bytes + at, (size_t)(length - at), &ins);
     if (status != EXARMO_AARCH64_STATUS_OK) {
       const int64_t remaining = length - at;
       const uint32_t size = remaining < 4 ? (uint32_t)remaining : 4;
-      InvalidExarmo(batch, pc, size, status);
+      if (Written(s, false, stop, kFlowNone, false))
+        InvalidExarmo(batch, pc, size, status);
       at += size;
       if (Stops(stop, kFlowNone, false)) break;
       continue;
@@ -667,85 +984,14 @@ static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
     if (size < 1 || size > length - at) return DISASSEMBLER_STATUS_FAILED;
     Record r;
     InitRecord(&r, batch, pc);
-    r.size = size;
-    const int encoding = exarmo_aarch64_instruction_encoding(&ins);
-    r.id = encoding;
-    r.mnemonic = exarmo_aarch64_instruction_mnemonic(&ins);
-    r.canonical = exarmo_aarch64_encoding_mnemonic(encoding);
-    if (!exarmo_aarch64_instruction_unpredictable(&ins)) r.flags |= kFlagValid;
-    r.flags |= kFlagWritesFlagsKnown;
-    if (exarmo_aarch64_instruction_flags(&ins).writes != 0)
-      r.flags |= kFlagWritesFlags;
-    const exarmo_aarch64_branch branch =
-        exarmo_aarch64_instruction_branch(&ins, pc);
-    r.flow = ExarmoFlow64(branch.kind);
-    if (branch.conditional) r.flags |= kFlagConditional;
-    const size_t count = exarmo_aarch64_instruction_operands(
-        &ins, ops, EXARMO_AARCH64_MAX_OPERANDS);
-    if (count > EXARMO_AARCH64_MAX_OPERANDS) return DISASSEMBLER_STATUS_FAILED;
-    const Aarch64Effect none = {0, 0, 0};
-    const Aarch64Effect* effect = encoding < EXARMO_AARCH64_ENCODING_COUNT
-                                      ? &kAarch64Effects[encoding]
-                                      : &none;
-    const bool known = (effect->flags & kEffectKnown) != 0;
-    int64_t written[kArm64MaxWrites];
-    int written_count = 0;
-    int64_t read[2 * EXARMO_AARCH64_MAX_OPERANDS];
-    int read_count = 0;
-    if (known) {
-      const uint32_t word = (uint32_t)bytes[at] |
-                            (uint32_t)bytes[at + 1] << 8 |
-                            (uint32_t)bytes[at + 2] << 16 |
-                            (uint32_t)bytes[at + 3] << 24;
-      for (int k = effect->write_start;
-           k < effect->write_start + effect->write_count; k++) {
-        const int64_t reg = Arm64Written(&kAarch64Writes[k], word);
-        if (reg == 0 || Arm64WrittenIndex(written, written_count, reg) >= 0)
-          continue;
-        if (written_count == kArm64MaxWrites) return DISASSEMBLER_STATUS_FAILED;
-        written[written_count++] = reg;
-      }
-      r.flags |= kFlagRegisterAccess;
-    }
-    bool has_condition = false;
-    for (size_t i = 0; i < count; i++) {
-      const exarmo_aarch64_operand* op = &ops[i];
-      if (!has_condition && op->kind == EXARMO_AARCH64_OPERAND_COND) {
-        has_condition = true;
-        r.condition = op->cond < 14 ? op->cond + 1 : 0;
-      }
-      if (op->kind == EXARMO_AARCH64_OPERAND_MEM) {
-        if (op->mem.writeback != EXARMO_AARCH64_WRITEBACK_NONE)
-          r.flags |= kFlagWriteback;
-        if (op->mem.writeback == EXARMO_AARCH64_WRITEBACK_POST)
-          r.flags |= kFlagPostIndex;
-      }
-      Operand o;
-      Operand64(op, pc, &o);
-      if (known && o.kind == kKindRegister) {
-        o.has_access = true;
-        const int index = Arm64WrittenIndex(written, written_count, o.reg);
-        o.access = index >= 0 ? 2 : 1;
-        if (index >= 0) written[index] = o.reg;
-        if (o.access == 1 && o.reg != 0) read[read_count++] = o.reg;
-      } else if (known && o.kind == kKindMemory) {
-        o.has_access = true;
-        o.access = ((effect->flags & kEffectReadsMemory) != 0 ? 1 : 0) |
-                   ((effect->flags & kEffectWritesMemory) != 0 ? 2 : 0);
-        if (o.base != 0) read[read_count++] = o.base;
-        if (o.index != 0) read[read_count++] = o.index;
-      }
-      WriteOperand(batch, &o);
-      r.operand_count++;
-    }
-    for (int i = 0; i < read_count; i++)
-      batch->registers[batch->register_count + r.read_count++] =
-          (uint32_t)read[i];
-    for (int i = 0; i < written_count; i++)
-      batch->registers[batch->register_count + r.read_count +
-                       r.written_count++] = (uint32_t)written[i];
-    batch->register_count += r.read_count + r.written_count;
-    WriteRecord(batch, &r);
+    Arm64Head(&ins, pc, size, &r);
+    const bool selected = Selected(s, r.id, r.flow);
+    if (!selected)
+      r.flags |= kFlagBrief;
+    else if (Arm64Body(&ins, bytes + at, pc, &r, batch) != DISASSEMBLER_STATUS_OK)
+      return DISASSEMBLER_STATUS_FAILED;
+    if (Written(s, selected, stop, r.flow, (r.flags & kFlagValid) != 0))
+      WriteRecord(batch, &r);
     at += size;
     if (Stops(stop, r.flow, (r.flags & kFlagValid) != 0)) break;
   }
@@ -1434,6 +1680,73 @@ const char* disassembler_mnemonic(void* context, int64_t key) {
   return NULL;
 }
 
+static void FreeSelection(Selection* s) {
+  if (s == NULL) return;
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  Arm64FreePrefilter(&s->prefilter);
+#endif
+  free(s);
+}
+
+static bool SupportsSelection(const Context* c) {
+#if defined(DISASSEMBLER_ZYDIS)
+  if (c->backend == kBackendZydis) return true;
+#endif
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  if (c->backend == kBackendExarmo && c->architecture == kArchArm64)
+    return true;
+#endif
+  (void)c;
+  return false;
+}
+
+int32_t disassembler_select(void* context, uint32_t flows, const uint8_t* ids,
+                            int64_t id_bytes, int32_t skip_others) {
+  Context* c = context;
+  if (c == NULL) return DISASSEMBLER_STATUS_FAILED;
+  if (flows == 0 && id_bytes == 0) {
+    FreeSelection(c->selection);
+    c->selection = NULL;
+    return DISASSEMBLER_STATUS_OK;
+  }
+  if (id_bytes < 0 || id_bytes > kSelectionIdBytes)
+    return DISASSEMBLER_STATUS_CAPACITY;
+  if (!SupportsSelection(c)) return DISASSEMBLER_STATUS_UNSUPPORTED;
+  Selection* s = c->selection;
+  if (s == NULL) {
+    s = calloc(1, sizeof(Selection));
+    if (s == NULL) return DISASSEMBLER_STATUS_FAILED;
+    c->selection = s;
+  }
+  memset(s->ids, 0, sizeof(s->ids));
+  if (id_bytes > 0) memcpy(s->ids, ids, (size_t)id_bytes);
+  s->flows = flows & kFlowBits;
+  s->skip_others = skip_others != 0;
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  s->prefilter.built = false;
+  if (c->architecture == kArchArm64 && !s->probed) Arm64ProbeFlows(s);
+#endif
+  return DISASSEMBLER_STATUS_OK;
+}
+
+int32_t disassembler_exarmo_pattern(int32_t encoding, uint32_t* mask,
+                                    uint32_t* value) {
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  if (encoding < 0 || encoding >= EXARMO_AARCH64_ENCODING_COUNT)
+    return DISASSEMBLER_STATUS_FAILED;
+  const Aarch64Pattern* p = &kAarch64Patterns[encoding];
+  if (p->mask == 0) return DISASSEMBLER_STATUS_FAILED;
+  *mask = p->mask;
+  *value = p->value;
+  return DISASSEMBLER_STATUS_OK;
+#else
+  (void)encoding;
+  (void)mask;
+  (void)value;
+  return DISASSEMBLER_STATUS_UNSUPPORTED;
+#endif
+}
+
 void disassembler_close(void* context) {
   Context* c = context;
   if (c == NULL) return;
@@ -1444,6 +1757,7 @@ void disassembler_close(void* context) {
     free(c->mnemonics);
   }
 #endif
+  FreeSelection(c->selection);
   free(c);
 }
 
