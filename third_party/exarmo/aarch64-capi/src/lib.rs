@@ -202,6 +202,63 @@ pub unsafe extern "C" fn exarmo_aarch64_instruction_branch(
     unsafe { with_held(inst, Branch::NONE, |inst| inst.at(address).branch().into()) }
 }
 
+/// What a batch reader asks of every instruction, `exarmo_aarch64_summary`
+/// in C: the 6 guarded calls it took were 33 of 89 ns an instruction.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct Summary {
+    /// `exarmo_aarch64_instruction_encoding`.
+    pub encoding: u32,
+    /// `exarmo_aarch64_instruction_mnemonic`.
+    pub mnemonic: u32,
+    /// `exarmo_aarch64_instruction_length`.
+    pub length: u8,
+    /// `exarmo_aarch64_instruction_unpredictable`.
+    pub unpredictable: bool,
+    /// `exarmo_aarch64_instruction_flags`.
+    pub flags: FlagEffect,
+    /// `exarmo_aarch64_instruction_branch` at the address asked.
+    pub branch: Branch,
+}
+
+/// Write what the instruction is, does to the flags and does to the flow of
+/// control at `address` into `out`, in one guarded call. Returns false and
+/// writes nothing for a null pointer or a panic.
+///
+/// # Safety
+///
+/// A non-null `inst` must point to an instruction written by a successful
+/// decode, and a non-null `out` must point to writable storage.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn exarmo_aarch64_instruction_summary(
+    inst: *const CInstruction,
+    address: u64,
+    out: *mut Summary,
+) -> bool {
+    if out.is_null() {
+        return false;
+    }
+    let summary = unsafe {
+        with_held(inst, None, |inst| {
+            Some(Summary {
+                encoding: inst.encoding() as u32,
+                mnemonic: inst.mnemonic() as u32,
+                length: inst.encoding().length(),
+                unpredictable: inst.unpredictable(),
+                flags: inst.flags().into(),
+                branch: inst.at(address).branch().into(),
+            })
+        })
+    };
+    match summary {
+        Some(summary) => {
+            unsafe { *out = summary };
+            true
+        }
+        None => false,
+    }
+}
+
 /// Write the instruction's operands into `out`, up to `capacity`. Returns
 /// how many the instruction has.
 ///

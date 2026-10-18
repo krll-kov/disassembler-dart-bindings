@@ -860,18 +860,16 @@ typedef struct Arm64Full {
   int read_count;
 } Arm64Full;
 
-static void Arm64Head(const exarmo_aarch64_instruction* ins, uint64_t pc,
-                      uint8_t size, Record* r) {
-  r->size = size;
-  const int encoding = exarmo_aarch64_instruction_encoding(ins);
-  r->id = encoding;
-  r->mnemonic = exarmo_aarch64_instruction_mnemonic(ins);
-  r->canonical = exarmo_aarch64_encoding_mnemonic(encoding);
-  if (!exarmo_aarch64_instruction_unpredictable(ins)) r->flags |= kFlagValid;
-  const exarmo_aarch64_branch branch =
-      exarmo_aarch64_instruction_branch(ins, pc);
-  r->flow = ExarmoFlow64(branch.kind);
-  if (branch.conditional) r->flags |= kFlagConditional;
+// One guarded call in place of 6: each exarmo entry point runs under
+// exarmo_capi_try, and the 6 were 33 of 89 ns an instruction
+static void Arm64Head(const exarmo_aarch64_summary* s, Record* r) {
+  r->size = s->length;
+  r->id = s->encoding;
+  r->mnemonic = s->mnemonic;
+  r->canonical = exarmo_aarch64_encoding_mnemonic(s->encoding);
+  if (!s->unpredictable) r->flags |= kFlagValid;
+  r->flow = ExarmoFlow64(s->branch.kind);
+  if (s->branch.conditional) r->flags |= kFlagConditional;
 }
 
 static int32_t Arm64Writes(uint32_t word, Arm64Full* f) {
@@ -915,11 +913,10 @@ static void Arm64Operand(const exarmo_aarch64_operand* op, uint64_t pc,
 }
 
 static int32_t Arm64Body(const exarmo_aarch64_instruction* ins,
-                         const uint8_t* bytes, uint64_t pc, Record* r,
-                         disassembler_batch* batch) {
+                         const exarmo_aarch64_summary* s, const uint8_t* bytes,
+                         uint64_t pc, Record* r, disassembler_batch* batch) {
   r->flags |= kFlagWritesFlagsKnown;
-  if (exarmo_aarch64_instruction_flags(ins).writes != 0)
-    r->flags |= kFlagWritesFlags;
+  if (s->flags.writes != 0) r->flags |= kFlagWritesFlags;
   Arm64Full f;
   f.count = exarmo_aarch64_instruction_operands(ins, f.ops,
                                                 EXARMO_AARCH64_MAX_OPERANDS);
@@ -980,15 +977,19 @@ static int32_t DecodeArm64(Context* c, const uint8_t* bytes, int64_t length,
       if (Stops(stop, kFlowNone, false)) break;
       continue;
     }
-    const uint8_t size = exarmo_aarch64_instruction_length(&ins);
+    exarmo_aarch64_summary summary;
+    if (!exarmo_aarch64_instruction_summary(&ins, pc, &summary))
+      return DISASSEMBLER_STATUS_FAILED;
+    const uint8_t size = summary.length;
     if (size < 1 || size > length - at) return DISASSEMBLER_STATUS_FAILED;
     Record r;
     InitRecord(&r, batch, pc);
-    Arm64Head(&ins, pc, size, &r);
+    Arm64Head(&summary, &r);
     const bool selected = Selected(s, r.id, r.flow);
     if (!selected)
       r.flags |= kFlagBrief;
-    else if (Arm64Body(&ins, bytes + at, pc, &r, batch) != DISASSEMBLER_STATUS_OK)
+    else if (Arm64Body(&ins, &summary, bytes + at, pc, &r, batch) !=
+             DISASSEMBLER_STATUS_OK)
       return DISASSEMBLER_STATUS_FAILED;
     if (Written(s, selected, stop, r.flow, (r.flags & kFlagValid) != 0))
       WriteRecord(batch, &r);
@@ -1637,11 +1638,12 @@ static int64_t Arm64CallTargets(const uint8_t* bytes, int64_t length,
       at += length - at < 4 ? length - at : 4;
       continue;
     }
-    const exarmo_aarch64_branch branch =
-        exarmo_aarch64_instruction_branch(&ins, pc);
-    if (ExarmoFlow64(branch.kind) == kFlowCall && branch.has_target)
-      targets[count++] = branch.target;
-    at += exarmo_aarch64_instruction_length(&ins);
+    exarmo_aarch64_summary summary;
+    if (!exarmo_aarch64_instruction_summary(&ins, pc, &summary)) break;
+    if (ExarmoFlow64(summary.branch.kind) == kFlowCall &&
+        summary.branch.has_target)
+      targets[count++] = summary.branch.target;
+    at += summary.length;
   }
   *consumed = at;
   return count;

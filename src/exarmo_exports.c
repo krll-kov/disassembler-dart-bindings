@@ -277,6 +277,13 @@
 #endif
 #if defined(DISASSEMBLER_EXARMO_AARCH64)
 #if defined(_M_IX86)
+#pragma comment(linker, "/EXPORT:exarmo_aarch64_instruction_summary=_exarmo_aarch64_instruction_summary")
+#else
+#pragma comment(linker, "/EXPORT:exarmo_aarch64_instruction_summary")
+#endif
+#endif
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+#if defined(_M_IX86)
 #pragma comment(linker, "/EXPORT:exarmo_aarch64_instruction_text=_exarmo_aarch64_instruction_text")
 #else
 #pragma comment(linker, "/EXPORT:exarmo_aarch64_instruction_text")
@@ -461,6 +468,9 @@ const void *const disassembler_exarmo_exports[] = {
 #endif
 #if defined(DISASSEMBLER_EXARMO_AARCH64)
   (const void *)&exarmo_aarch64_instruction_size,
+#endif
+#if defined(DISASSEMBLER_EXARMO_AARCH64)
+  (const void *)&exarmo_aarch64_instruction_summary,
 #endif
 #if defined(DISASSEMBLER_EXARMO_AARCH64)
   (const void *)&exarmo_aarch64_instruction_text,

@@ -49,6 +49,7 @@ const recordUseMapping = {
   'exarmo_aarch64_instruction_mnemonic': 'exarmo_aarch64_instruction_mnemonic',
   'exarmo_aarch64_instruction_operands': 'exarmo_aarch64_instruction_operands',
   'exarmo_aarch64_instruction_size': 'exarmo_aarch64_instruction_size',
+  'exarmo_aarch64_instruction_summary': 'exarmo_aarch64_instruction_summary',
   'exarmo_aarch64_instruction_text': 'exarmo_aarch64_instruction_text',
   'exarmo_aarch64_instruction_tokens': 'exarmo_aarch64_instruction_tokens',
   'exarmo_aarch64_instruction_unpredictable':

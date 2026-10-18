@@ -227,6 +227,23 @@ typedef struct exarmo_aarch64_branch {
  * `address`. The kind is EXARMO_AARCH64_BRANCH_NONE for a null pointer. */
 exarmo_aarch64_branch exarmo_aarch64_instruction_branch(const exarmo_aarch64_instruction *inst, uint64_t address);
 
+/* What a batch reader asks of every instruction, in one call: the encoding,
+ * the mnemonic, the length, whether it is CONSTRAINED UNPREDICTABLE, what
+ * it does to the flags and what it does to the flow of control at the
+ * address asked. */
+typedef struct exarmo_aarch64_summary {
+    uint32_t encoding;
+    uint32_t mnemonic;
+    uint8_t length;
+    bool unpredictable;
+    exarmo_aarch64_flag_effect flags;
+    exarmo_aarch64_branch branch;
+} exarmo_aarch64_summary;
+
+/* Writes the summary of `inst` at `address` into `out`. Returns false and
+ * writes nothing for a null pointer. */
+bool exarmo_aarch64_instruction_summary(const exarmo_aarch64_instruction *inst, uint64_t address, exarmo_aarch64_summary *out);
+
 /* ------------------------------------------------------------------------
  * Text
  * ---------------------------------------------------------------------- */

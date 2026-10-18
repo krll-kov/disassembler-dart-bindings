@@ -368,6 +368,20 @@ external int exarmo_aarch64_instruction_size();
 
 @meta.RecordUse()
 @ffi.Native<
+  ffi.Bool Function(
+    ffi.Pointer<exarmo_aarch64_instruction>,
+    ffi.Uint64,
+    ffi.Pointer<exarmo_aarch64_summary>,
+  )
+>()
+external bool exarmo_aarch64_instruction_summary(
+  ffi.Pointer<exarmo_aarch64_instruction> inst,
+  int address,
+  ffi.Pointer<exarmo_aarch64_summary> out,
+);
+
+@meta.RecordUse()
+@ffi.Native<
   ffi.Size Function(
     ffi.Pointer<exarmo_aarch64_instruction>,
     ffi.Uint64,
@@ -10920,6 +10934,24 @@ final class exarmo_aarch64_str extends ffi.Struct {
   }) => $allocator<exarmo_aarch64_str>()
     ..ref.data = data
     ..ref.length = length;
+}
+
+final class exarmo_aarch64_summary extends ffi.Struct {
+  @ffi.Uint32()
+  external int encoding;
+
+  @ffi.Uint32()
+  external int mnemonic;
+
+  @ffi.Uint8()
+  external int length;
+
+  @ffi.Bool()
+  external bool unpredictable;
+
+  external exarmo_aarch64_flag_effect flags;
+
+  external exarmo_aarch64_branch branch;
 }
 
 final class exarmo_aarch64_symbol extends ffi.Struct {

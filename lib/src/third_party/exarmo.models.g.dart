@@ -858,6 +858,34 @@ final class ExarmoAarch64Str {
       ExarmoAarch64Str(data: value.data.address, length: value.length);
 }
 
+final class ExarmoAarch64Summary {
+  final int encoding;
+  final int mnemonic;
+  final int length;
+  final bool unpredictable;
+  final ExarmoAarch64FlagEffect flags;
+  final ExarmoAarch64Branch branch;
+
+  const ExarmoAarch64Summary({
+    required this.encoding,
+    required this.mnemonic,
+    required this.length,
+    required this.unpredictable,
+    required this.flags,
+    required this.branch,
+  });
+
+  factory ExarmoAarch64Summary.copy(native.exarmo_aarch64_summary value) =>
+      ExarmoAarch64Summary(
+        encoding: value.encoding,
+        mnemonic: value.mnemonic,
+        length: value.length,
+        unpredictable: value.unpredictable,
+        flags: ExarmoAarch64FlagEffect.copy(value.flags),
+        branch: ExarmoAarch64Branch.copy(value.branch),
+      );
+}
+
 final class ExarmoAarch64Symbol {
   final int bits;
   final ExarmoAarch64Str name;
