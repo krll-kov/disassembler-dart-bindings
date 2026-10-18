@@ -322,6 +322,31 @@ void main() {
       expect(withPattern, 4665);
     });
 
+    test('skipping a range without a selected instruction writes nothing', () {
+      final _Decoder d = _Decoder(
+        DisassemblerArch.arm64,
+        DisassemblerBackend.exarmo,
+        _bytesOf([0x91002021, 0xB9400000, 0xD503201F, 0x14000001]),
+      );
+      final DecodeSelection calls = DecodeSelection(
+        flows: {ControlFlow.call},
+        skipOthers: true,
+      );
+      expect(d.decode(select: calls), 0);
+      expect(d.batch.consumed, 16);
+      expect(d.batch.stopped, isFalse);
+      int batches = 0;
+      d.reader.visit(d.batch, (DecodedBatch batch) {
+        batches++;
+        return true;
+      }, select: calls);
+      expect(batches, 0);
+      final DecodedBatch tiny = DecodedBatch(capacity: 1);
+      addTearDown(tiny.close);
+      expect(d.reader.decode(tiny, end: 0, select: calls), 0);
+      expect(tiny.consumed, 0);
+    });
+
     test('a stop on invalid words decodes every word', () {
       final _Decoder d = _Decoder(
         DisassemblerArch.arm64,

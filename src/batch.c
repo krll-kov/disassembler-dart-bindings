@@ -1571,7 +1571,10 @@ int32_t disassembler_decode(void* context, const uint8_t* bytes,
     default: break;
   }
   (void)resume;
-  if (status == DISASSEMBLER_STATUS_OK && batch->count == 0)
+  // A skipping selection consumes a range without a selected instruction and
+  // writes nothing, which is not the batch being too small
+  if (status == DISASSEMBLER_STATUS_OK && batch->count == 0 &&
+      batch->consumed == 0)
     return DISASSEMBLER_STATUS_CAPACITY;
   return status;
 }
