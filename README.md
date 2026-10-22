@@ -123,6 +123,8 @@ The next decode overwrites the batch, so copy an instruction with `batch.instruc
 
 `DecodeSelection` limits operand and register decoding to the instructions a reader uses: those whose `ControlFlow` is in `flows` or whose engine id, as `batch.id(i)` returns it, is in `ids`. Zydis ids are `ZydisMnemonic` values from `zydis_native.dart` and exarmo ARM64 ids are `exarmo_aarch64_encoding` values from `exarmo_native.dart`. Pass it as `select:` to `reader.decode` or `reader.visit`. The other instructions are written with address, size, id, mnemonics and flow but no operands, register access or condition code, and `batch.brief(i)` is true for them. With `skipOthers: true` they are not written at all, `consumed` still covers their bytes, and an instruction that a `stopAfter` flow ends the decode on is written in any case, so `batch.stopped` keeps working. Capstone and 32-bit ARM throw `UnsupportedError` on a selection.
 
+Selection by id uses engine mnemonic ids. Zydis has no id for `ja`, `jae`, `jg`, `jge`, `je` or `jne`: `canonicalMnemonic` renames `jnbe`, `jnb`, `jnle`, `jnl`, `jz` and `jnz` to them, so selection uses `ZYDIS_MNEMONIC_JNBE` and the other original ids. With `skipOthers` skipped instructions have no record and no address in the batch, so a recursive descent that checks every instruction address for a block or function boundary cannot use it and keeps brief records.
+
 Zydis decodes the instruction first and its operands only for a selected one. exarmo ARM64 does the same, and with `skipOthers` it tests every word against the fixed bits of the selected encodings before it decodes any, from a table generated out of Arm's A64 ISA XML into `src/aarch64_effects.h`: 4665 of 4746 encodings have a pattern and `DecodeSelection.arm64Pattern(id)` returns its mask and value. A selection by flow covers every encoding whose probe word branches and the 28 encodings whose probe words are all unallocated. The 81 encodings added in 2026-09 have no pattern, so a selection by one of their ids decodes every word and a selection by flow does not reach them. `stopAfterInvalid` also decodes every word, since a skipped word is never found invalid.
 
 Linear decode of the executable section, best of 5, Apple M4 Max, ns per instruction. The id sets are 66 ARM64 encodings that match 61% of the words and 29 x86 mnemonics that match 85% of the instructions.
@@ -134,6 +136,18 @@ Linear decode of the executable section, best of 5, Apple M4 Max, ns per instruc
 | brief, calls and the id set | 71 | 80 | 65 |
 | skipping, calls selected | 4.3 | 6.4 | 38 |
 | skipping, calls and the id set | 60 | 75 | 65 |
+
+## Performance
+
+- Pass a `DecodeSelection` with the control flows and mnemonic ids whose operands the reader uses and keep brief records: 16% off a recursive descent over 1.2 MB and over 10 MB of x86 code. `ids` has to hold every mnemonic whose operands any check reads, `and` and `or` for a write to `[ebp-4]` as well as `mov`.
+- Use `skipOthers: true` for a linear scan that reads selected instructions only: 4.3 against 85 ns per ARM64 word in the table above. Where a few words after a selected instruction matter, decode that window with `reader.decode(start: ..., end: ...)` instead of keeping every instruction.
+- Index a typed list by `batch.id(i)` for per-mnemonic data instead of comparing `canonicalMnemonic` strings.
+- Test addresses against a bitmap of the code sections, 1 bit per byte, instead of a `Set<int>`: 6 to 9% off the same descent for 1 MB of RSS on 10 MB of code. Clear a per-function bitmap through the list of addresses it set, not by filling it.
+- Mark decoded bytes in such a bitmap and run a linear pass over the unmarked ranges only. Decoding every byte linearly after a recursive pass cost a quarter of a scan and repeated what the pass had decoded.
+- Keep decoded instructions in typed list columns. A growable `List<int>` costs 8 bytes per field plus spare capacity, 32 MB for 450156 ARM64 instructions.
+- Reuse one chunk of columns, 512 instructions, for a linear sweep instead of indexing 3.4 M instructions of a 19 MB executable. An index from address to decoded instruction takes 4 KB pages allocated only where instructions were decoded.
+- Decode from a jump target with `limit`, `stopAfterInvalid: true` and `stopAfter: {ControlFlow.jump, ControlFlow.return_}` and decode the next batch when a path reaches it: one unlimited decode to the next jump produced 1.2 M instructions.
+- `callTargets` is for linear scans. Data in a code section decodes as calls, so it is no source of function starts for a recursive descent.
 
 ## Known engine gaps
 
