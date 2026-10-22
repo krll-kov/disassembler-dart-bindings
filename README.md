@@ -8,9 +8,7 @@ Add the dependency and the build settings to your application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  disassembler:
-    git:
-      url: https://github.com/krll-kov/capstone-dart-bindings
+  disassembler: ^1.0.0
 
 hooks:
   user_defines:

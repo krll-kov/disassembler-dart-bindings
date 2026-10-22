@@ -1,6 +1,6 @@
 name: disassembler
 description: Native instruction decoding with Zydis, exarmo and Capstone
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/krll-kov/disassembler-dart-bindings
 topics: [disassembler, x86, arm64, zydis, capstone]
 environment:

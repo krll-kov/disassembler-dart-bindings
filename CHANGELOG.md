@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Installation section of the README takes the package from pub.dev instead of a git repository
+- The example decodes through `Disassembler` with the Zydis backend that the installation settings build, not through `Capstone`
+
 ## 1.0.0
 
 First release
